@@ -39,19 +39,22 @@ class TiRexForecastPipeline:
 
     @classmethod
     def from_pretrained(cls, device: str = "cpu") -> TiRexForecastPipeline:
-        import os
-
         import torch
 
-        if device == "cpu" and torch.cuda.is_available() and not os.environ.get("CUDA_HOME"):
+        if device.startswith("cpu") and torch.cuda.is_available():
             # Upstream xlstm resolves CUDA include paths at import time whenever a GPU is
-            # visible, even though CPU inference never compiles a kernel. Surface that as a
-            # typed error instead of letting an OSError escape from deep inside the import.
-            raise RuntimeError(
-                "A CUDA device is visible but CUDA_HOME is unset; upstream xlstm needs the CUDA "
-                "toolkit at import even for device='cpu'. Hide the GPU with "
-                "CUDA_VISIBLE_DEVICES='' before importing torch, or set CUDA_HOME."
-            )
+            # visible, even though CPU inference never compiles a kernel. Use torch's own
+            # resolution (CUDA_HOME, CUDA_PATH, nvcc on PATH, /usr/local/cuda) as the oracle and
+            # surface a typed error instead of letting an OSError escape from inside the import.
+            from torch.utils.cpp_extension import CUDA_HOME
+
+            if CUDA_HOME is None:
+                raise RuntimeError(
+                    "A CUDA device is visible but no CUDA toolkit was found (CUDA_HOME/CUDA_PATH "
+                    "unset, no nvcc on PATH, no /usr/local/cuda); upstream xlstm needs the toolkit "
+                    "at import even for device='cpu'. Hide the GPU with CUDA_VISIBLE_DEVICES='' "
+                    "before importing torch, or set CUDA_HOME."
+                )
 
         from tirex2 import load_model
 

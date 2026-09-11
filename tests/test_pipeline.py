@@ -78,9 +78,25 @@ def test_baseline():
     assert mae([3, 4], [3, 3]) == 0.5
 
 
-def test_cpu_path_with_visible_gpu_and_no_toolkit_is_a_typed_error(monkeypatch):
-    _stub_runtime(monkeypatch)
+def _stub_cuda_toolkit(monkeypatch, cuda_home):
+    """Model torch's resolved toolkit path (torch.utils.cpp_extension.CUDA_HOME)."""
     sys.modules["torch"].cuda = types.SimpleNamespace(is_available=lambda: True)
-    monkeypatch.delenv("CUDA_HOME", raising=False)
-    with pytest.raises(RuntimeError, match="CUDA_HOME"):
-        TiRexForecastPipeline.from_pretrained(device="cpu")
+    cpp_extension = types.SimpleNamespace(CUDA_HOME=cuda_home)
+    monkeypatch.setitem(sys.modules, "torch.utils", types.SimpleNamespace(cpp_extension=cpp_extension))
+    monkeypatch.setitem(sys.modules, "torch.utils.cpp_extension", cpp_extension)
+
+
+@pytest.mark.parametrize("device", ["cpu", "cpu:0"])
+def test_cpu_path_with_visible_gpu_and_no_toolkit_is_a_typed_error(monkeypatch, device):
+    _stub_runtime(monkeypatch)
+    _stub_cuda_toolkit(monkeypatch, cuda_home=None)
+    with pytest.raises(RuntimeError, match="no CUDA toolkit was found"):
+        TiRexForecastPipeline.from_pretrained(device=device)
+
+
+def test_cpu_path_with_resolved_toolkit_reaches_the_loader(monkeypatch):
+    _stub_runtime(monkeypatch)
+    _stub_cuda_toolkit(monkeypatch, cuda_home="/usr/local/cuda")
+    sys.modules["tirex2"].load_model = lambda *args, **kwargs: FakeModel()
+    pipeline = TiRexForecastPipeline.from_pretrained(device="cpu")
+    assert isinstance(pipeline, TiRexForecastPipeline)
