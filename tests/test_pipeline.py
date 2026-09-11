@@ -21,7 +21,16 @@ class FakeModel:
 
 
 def test_shapes(monkeypatch):
-    monkeypatch.setitem(sys.modules, "tirex2", types.SimpleNamespace(TimeseriesType=FakeTimeseriesType))
+    monkeypatch.setitem(
+        sys.modules,
+        "tirex2",
+        types.SimpleNamespace(TimeseriesType=FakeTimeseriesType),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "torch",
+        types.SimpleNamespace(from_numpy=lambda value: value),
+    )
     pipeline = TiRexForecastPipeline(FakeModel(), "cpu")
     result = pipeline.forecast(np.arange(64), horizon=8)
     assert result["median"].shape == (1, 8)
