@@ -15,14 +15,17 @@ DIMER-oriented zero-shot forecasting wrapper for **NX-AI TiRex-2**, supporting u
 
 ```python
 from tirex_forecasting_pipeline import TiRexForecastPipeline
+
 pipe = TiRexForecastPipeline.from_pretrained(device="cpu")
-result = pipe.forecast([1,2,3,4] * 16, horizon=12)
+result = pipe.forecast([1, 2, 3, 4] * 16, horizon=12)
 print(result["median"])
 ```
 
+For covariate-conditioned forecasting, the DIMER wrapper enforces the upstream time-axis contract before model execution: `past_covariates` must have exactly the target context length, while `future_covariates` must contain exactly `context_length + horizon` steps. Both accept shape `(n_covariates, time)` or a one-dimensional single-covariate input and must contain finite values.
+
 ## Tutorial
 
-`tutorials/tirex_forecasting_colab.ipynb` is `TASK-INFERENCE`. It uses chronological backtesting, MAE/RMSE, a last-value baseline, explicit horizon/context semantics, probabilistic quantiles, optional BYOD CSV, and JSON/CSV export.
+`tutorials/tirex_forecasting_colab.ipynb` is `TASK-INFERENCE`. It self-bootstraps in a fresh runtime, validates raw BYOD CSV headers before pandas ingestion, uses chronological backtesting, MAE/RMSE, a last-value baseline, explicit horizon/context semantics, probabilistic quantiles, and JSON/CSV provenance export.
 
 ## Release status
 
