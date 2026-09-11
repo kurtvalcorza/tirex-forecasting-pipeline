@@ -30,7 +30,10 @@ def _stub_runtime(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
         "torch",
-        types.SimpleNamespace(from_numpy=lambda value: value),
+        types.SimpleNamespace(
+            from_numpy=lambda value: value,
+            cuda=types.SimpleNamespace(is_available=lambda: False),
+        ),
     )
 
 
@@ -73,3 +76,11 @@ def test_baseline():
     baseline = last_value_baseline([1, 2, 3], 2)
     assert baseline.tolist() == [[3, 3]]
     assert mae([3, 4], [3, 3]) == 0.5
+
+
+def test_cpu_path_with_visible_gpu_and_no_toolkit_is_a_typed_error(monkeypatch):
+    _stub_runtime(monkeypatch)
+    sys.modules["torch"].cuda = types.SimpleNamespace(is_available=lambda: True)
+    monkeypatch.delenv("CUDA_HOME", raising=False)
+    with pytest.raises(RuntimeError, match="CUDA_HOME"):
+        TiRexForecastPipeline.from_pretrained(device="cpu")

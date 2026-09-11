@@ -29,4 +29,4 @@ For covariate-conditioned forecasting, the DIMER wrapper enforces the upstream t
 
 ## Release status
 
-**Candidate.** Full clean-runtime execution evidence remains required. CPU is the portable reference path; CUDA has additional upstream compiler/kernel requirements and is not the default tutorial assumption.
+**Candidate.** Full clean-runtime execution evidence remains required; local pre-flight runs are recorded in `docs/release-verification.md`. CPU is the portable reference path; CUDA has additional upstream compiler/kernel requirements and is not the default tutorial assumption. On a machine where a CUDA GPU is visible but no CUDA toolkit is installed, upstream `xlstm` fails at import even for `device="cpu"`; `from_pretrained` raises a typed `RuntimeError` naming the fix (hide the GPU with `CUDA_VISIBLE_DEVICES=""` before importing torch, or set `CUDA_HOME`).
