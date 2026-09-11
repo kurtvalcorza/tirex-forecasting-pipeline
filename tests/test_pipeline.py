@@ -2,6 +2,7 @@ import sys
 import types
 
 import numpy as np
+import pytest
 
 from tirex_forecasting_pipeline import TiRexForecastPipeline, last_value_baseline, mae
 
@@ -20,7 +21,7 @@ class FakeModel:
         return [np.zeros((n_variates, 9, prediction_length))]
 
 
-def test_shapes(monkeypatch):
+def _stub_runtime(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
         "tirex2",
@@ -31,10 +32,41 @@ def test_shapes(monkeypatch):
         "torch",
         types.SimpleNamespace(from_numpy=lambda value: value),
     )
+
+
+def test_shapes(monkeypatch):
+    _stub_runtime(monkeypatch)
     pipeline = TiRexForecastPipeline(FakeModel(), "cpu")
     result = pipeline.forecast(np.arange(64), horizon=8)
     assert result["median"].shape == (1, 8)
     assert result["quantiles"].shape == (1, 9, 8)
+
+
+def test_covariate_shapes(monkeypatch):
+    _stub_runtime(monkeypatch)
+    pipeline = TiRexForecastPipeline(FakeModel(), "cpu")
+    result = pipeline.forecast(
+        np.arange(64),
+        horizon=8,
+        past_covariates=np.ones((2, 64)),
+        future_covariates=np.ones((3, 72)),
+    )
+    assert result["past_covariates"] == 2
+    assert result["future_covariates"] == 3
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"past_covariates": np.ones((1, 63))}, "past_covariates must contain exactly 64"),
+        ({"future_covariates": np.ones((1, 71))}, "future_covariates must contain exactly 72"),
+    ],
+)
+def test_rejects_misaligned_covariates(monkeypatch, kwargs, match):
+    _stub_runtime(monkeypatch)
+    pipeline = TiRexForecastPipeline(FakeModel(), "cpu")
+    with pytest.raises(ValueError, match=match):
+        pipeline.forecast(np.arange(64), horizon=8, **kwargs)
 
 
 def test_baseline():
