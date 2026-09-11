@@ -12,7 +12,7 @@ base_model: NX-AI/TiRex-2
 
 ###### Description
 
-TiRex-2 is NX-AI's pretrained time-series foundation model for zero-shot univariate and multivariate forecasting, packaged here from `NX-AI/TiRex-2` at immutable revision `05e5b26db52bfb256f1ae1bdf785589850482de3`. The open model forecasts one or more target variates from history and can condition on past and future-known covariates without task-specific training. This repository adds immutable loading, finite-shape validation, normalized quantile/median outputs, chronological evaluation helpers, baselines, provenance, and a DIMER tutorial contract.
+TiRex-2 is NX-AI's pretrained time-series foundation model for zero-shot univariate and multivariate forecasting, packaged here from `NX-AI/TiRex-2` at immutable revision `05e5b26db52bfb256f1ae1bdf785589850482de3`. The open model forecasts one or more target variates from history and can condition on past and future-known covariates without task-specific training. This repository adds immutable loading, finite-shape and covariate-alignment validation, normalized quantile/median outputs, chronological evaluation helpers, baselines, provenance, and a DIMER tutorial contract.
 
 #### Intended Use and Limitations
 
@@ -27,7 +27,7 @@ Primary users are forecasting practitioners, ML engineers, data scientists, quan
 ###### Out-of-scope use cases
 
 1. **Capability boundary:** the open TiRex-2 release in this repository does not expose fine-tuning, streaming updates, classification, or regression adaptations advertised separately as TiRex-2 Pro capabilities.
-2. **Input boundary:** the DIMER wrapper requires finite 1D/2D target arrays, at least 32 and at most 16,384 context steps, and a horizon of 1–4,096 steps.
+2. **Input boundary:** the DIMER wrapper requires finite 1D/2D target arrays, at least 32 and at most 16,384 context steps, and a horizon of 1–4,096 steps. Optional `past_covariates` must contain exactly the target context length, and optional `future_covariates` must contain exactly `context_length + horizon` steps; misaligned covariates are rejected before model execution.
 3. **Decision boundary:** forecasts are not approved as sole inputs to high-consequence autonomous decisions without representative backtesting and human/domain oversight.
 
 #### Factors
@@ -38,11 +38,11 @@ This pipeline is not inherently demographic: its core input is numerical time-se
 
 ###### Instrumentation
 
-Time-series inputs may be produced by sensors, meters, transaction systems, monitoring agents, APIs, ETL jobs, business databases, or manually maintained operational records. Sampling interval, clock alignment, aggregation, unit changes, sensor drift, backfills, outages, and changed ETL logic can all become forecasting error. The wrapper validates dimensionality and finite values but cannot determine whether upstream instruments were calibrated or whether a historical regime change invalidates the learned prior.
+Time-series inputs may be produced by sensors, meters, transaction systems, monitoring agents, APIs, ETL jobs, business databases, or manually maintained operational records. Sampling interval, clock alignment, aggregation, unit changes, sensor drift, backfills, outages, and changed ETL logic can all become forecasting error. The wrapper validates dimensionality, finite values, and covariate time-axis alignment but cannot determine whether upstream instruments were calibrated or whether a historical regime change invalidates the learned prior.
 
 ###### Environment
 
-The portable reference environment is Python 3.12 with `tirex-2==0.2.1`, PyTorch 2.8, NumPy 2.3.3, and pandas 2.3.3. CPU is the default tutorial device. Upstream CUDA execution requires compatible recent NVIDIA hardware plus a matching CUDA toolkit because fused recurrent kernels may compile on first use. The data environment assumes temporally ordered numerical histories whose future evaluation period is not leaked into context or covariates.
+The portable reference environment is Python 3.12 with `tirex-2==0.2.1`, PyTorch 2.8, NumPy 2.3.3, and pandas 2.3.3. CPU is the default tutorial device. Upstream CUDA execution requires compatible recent NVIDIA hardware plus a matching CUDA toolkit because fused recurrent kernels may compile on first use. The data environment assumes temporally ordered numerical histories whose future evaluation period is not leaked into context or covariates; future-known covariates must genuinely be available through the requested horizon.
 
 #### Metrics
 
@@ -70,7 +70,7 @@ The pipeline is not intended or certified for autonomous decisions in health, sa
 
 ###### Mitigations
 
-Implemented controls include an immutable Hugging Face revision passed through upstream `hf_kwargs`; exact `tirex-2` and core runtime pins; finite target/covariate checks; explicit context and horizon ceilings; normalized quantile ordering; explicit q=0.5 median semantics; chronological tutorial backtesting; last-value comparison; machine-readable model/revision provenance; upstream `weights_only=True` checkpoint deserialization; unit tests around output shapes and metrics; and source validation that prevents notebook/model-card placeholders from shipping unnoticed.
+Implemented controls include an immutable Hugging Face revision passed through upstream `hf_kwargs`; exact `tirex-2` and core runtime pins; finite target and covariate checks; exact past/future covariate time-axis validation; explicit context and horizon ceilings; normalized quantile ordering; explicit q=0.5 median semantics; chronological tutorial backtesting; pre-pandas duplicate CSV-header rejection; last-value comparison; machine-readable repository/model provenance; upstream `weights_only=True` checkpoint deserialization; unit tests around output, metric, and covariate-shape contracts; and source validation that prevents notebook/model-card placeholders from shipping unnoticed.
 
 ###### Risks and harms
 
