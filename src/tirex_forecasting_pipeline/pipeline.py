@@ -13,6 +13,25 @@ MODEL_LICENSE = "Apache-2.0"
 QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 
+def _validate_covariates(value, *, expected_length: int, name: str) -> np.ndarray | None:
+    if value is None:
+        return None
+    array = np.asarray(value, dtype=np.float32)
+    if array.ndim == 1:
+        array = array[None, :]
+    if array.ndim != 2:
+        raise ValueError(f"{name} must be 1D or 2D with shape (covariates, time)")
+    if array.shape[0] < 1:
+        raise ValueError(f"{name} must contain at least one covariate")
+    if array.shape[1] != expected_length:
+        raise ValueError(
+            f"{name} must contain exactly {expected_length} time steps; got {array.shape[1]}"
+        )
+    if not np.isfinite(array).all():
+        raise ValueError(f"{name} must contain only finite values")
+    return array
+
+
 @dataclass
 class TiRexForecastPipeline:
     _model: Any
@@ -39,24 +58,29 @@ class TiRexForecastPipeline:
     ) -> dict[str, Any]:
         values = validate_target(target)
         validate_horizon(horizon)
+        context_length = values.shape[1]
+        past_values = _validate_covariates(
+            past_covariates,
+            expected_length=context_length,
+            name="past_covariates",
+        )
+        future_values = _validate_covariates(
+            future_covariates,
+            expected_length=context_length + horizon,
+            name="future_covariates",
+        )
 
         import torch
         from tirex2 import TimeseriesType
 
-        def as_covariates(value):
-            if value is None:
-                return None
-            array = np.asarray(value, dtype=np.float32)
-            if array.ndim == 1:
-                array = array[None, :]
-            if array.ndim != 2 or not np.isfinite(array).all():
-                raise ValueError("covariates must be finite 1D/2D arrays")
-            return torch.from_numpy(array)
-
         timeseries = TimeseriesType(
             target=torch.from_numpy(values),
-            past_covariates=as_covariates(past_covariates),
-            future_covariates=as_covariates(future_covariates),
+            past_covariates=(
+                torch.from_numpy(past_values) if past_values is not None else None
+            ),
+            future_covariates=(
+                torch.from_numpy(future_values) if future_values is not None else None
+            ),
         )
         quantiles = np.asarray(
             self._model.forecast(
@@ -79,6 +103,8 @@ class TiRexForecastPipeline:
             "model_id": MODEL_ID,
             "model_revision": MODEL_REVISION,
             "horizon": horizon,
-            "context_length": values.shape[1],
+            "context_length": context_length,
             "n_variates": values.shape[0],
+            "past_covariates": past_values.shape[0] if past_values is not None else 0,
+            "future_covariates": future_values.shape[0] if future_values is not None else 0,
         }
