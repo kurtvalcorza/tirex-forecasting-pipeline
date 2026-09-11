@@ -19,7 +19,7 @@ class TiRexForecastPipeline:
     device: str
 
     @classmethod
-    def from_pretrained(cls, device: str = "cpu") -> "TiRexForecastPipeline":
+    def from_pretrained(cls, device: str = "cpu") -> TiRexForecastPipeline:
         from tirex2 import load_model
 
         model = load_model(
