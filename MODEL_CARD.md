@@ -66,7 +66,7 @@ The portable reference environment is Python 3.12 with `tirex-2==0.2.1`, PyTorch
 
 ###### Performance Measures
 
-The repository reports `mae` and `rmse` on chronological holdouts. MAE measures average absolute error in the target's units and is easy to interpret, while RMSE weights larger errors more strongly and exposes a different failure mode. The tutorial also reports the same measures for a last-value baseline. These are tutorial/backtest metrics for the demonstrated series; upstream leaderboard numbers are not presented as measurements reproduced by this pipeline.
+The repository reports `mae` and `rmse` on chronological holdouts. MAE measures average absolute error in the target's units and is easy to interpret, while RMSE weights larger errors more strongly and exposes a different failure mode. The tutorial also reports the same measures for a last-value baseline. The public `evaluation_report` stage writes these measures, the q10–q90 `interval_coverage` and the baseline comparison to a machine-readable report whose verdict is `sample-sanity` on the withheld tutorial holdout and `not-measurable` when no truth is supplied. These are tutorial/backtest metrics for the demonstrated series; upstream leaderboard numbers are not presented as measurements reproduced by this pipeline.
 
 ###### Decision thresholds
 
@@ -88,7 +88,7 @@ The pipeline is not intended or certified for autonomous decisions in health, sa
 
 ###### Mitigations
 
-Implemented controls include an immutable Hugging Face revision passed through upstream `hf_kwargs`; exact `tirex-2` and core runtime pins; finite target and covariate checks; exact past/future covariate time-axis validation; explicit context and horizon ceilings; normalized quantile ordering; explicit q=0.5 median semantics; chronological tutorial backtesting; pre-pandas duplicate CSV-header rejection; last-value comparison; machine-readable repository/model provenance; upstream `weights_only=True` checkpoint deserialization; unit tests around output, metric, and covariate-shape contracts; and source validation that prevents notebook/model-card placeholders from shipping unnoticed.
+Implemented controls include an immutable Hugging Face revision passed through upstream `hf_kwargs`; a committed `dimer-base-manifest.json` whose per-file SHA-256 digests `verify_snapshot` re-checks before every load; the public `validate_inputs` stage, which applies the same target, horizon and covariate checks as `forecast` and writes an input manifest with any rejection recorded as a finding; exact `tirex-2` and core runtime pins; finite target and covariate checks; exact past/future covariate time-axis validation; explicit context and horizon ceilings; normalized quantile ordering; explicit q=0.5 median semantics; chronological tutorial backtesting; pre-pandas duplicate CSV-header rejection; last-value comparison; machine-readable repository/model provenance; upstream `weights_only=True` checkpoint deserialization; unit tests around output, metric, and covariate-shape contracts; and source validation that prevents notebook/model-card placeholders from shipping unnoticed.
 
 ###### Risks and harms
 
@@ -103,5 +103,6 @@ The pipeline must not be used for social scoring, unlawful discrimination, decep
 - Model: `NX-AI/TiRex-2`
 - Revision: `05e5b26db52bfb256f1ae1bdf785589850482de3`
 - Runtime package: `tirex-2==0.2.1`
+- Snapshot manifest: `weights/tirex-2/dimer-base-manifest.json` — `model.ckpt` SHA-256 `184b160ffbe4c01a26beeba14015ff3507c7497e1f3577114187bbc1d19fcac1` (380613375 bytes)
 - Upstream repository: https://github.com/NX-AI/tirex-2
 - Paper: https://arxiv.org/abs/2607.01204

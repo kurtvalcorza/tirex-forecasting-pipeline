@@ -1,0 +1,25 @@
+{
+  "format": "dimer_hf_snapshot",
+  "formatVersion": 1,
+  "modelKey": "tirex-2",
+  "modelId": "NX-AI/TiRex-2",
+  "revision": "05e5b26db52bfb256f1ae1bdf785589850482de3",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 5521,
+      "sha256": "ec10f277ff820fb8915b4ff3988916c25bc892167902aba84bb9bfe24d190b70"
+    },
+    {
+      "path": "model-config.yaml",
+      "bytes": 1204,
+      "sha256": "cddbe6d0be4919cb7b0cad747fb19a295264e129d1c0790cf62133b4cb5da727"
+    },
+    {
+      "path": "model.ckpt",
+      "bytes": 380613375,
+      "sha256": "184b160ffbe4c01a26beeba14015ff3507c7497e1f3577114187bbc1d19fcac1"
+    }
+  ],
+  "totalBytes": 380620100
+}
