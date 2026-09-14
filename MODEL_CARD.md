@@ -2,6 +2,7 @@
 license: apache-2.0
 model_card_spec: "1.1"
 pipeline_tag: time-series-forecasting
+task: "Others - Time-Series Forecasting"
 base_model: NX-AI/TiRex-2
 date_published: "2026-06-16"
 date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/NX-AI/TiRex-2)"
