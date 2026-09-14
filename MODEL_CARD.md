@@ -3,6 +3,8 @@ license: apache-2.0
 model_card_spec: "1.1"
 pipeline_tag: time-series-forecasting
 base_model: NX-AI/TiRex-2
+date_published: "2026-06-16"
+date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/NX-AI/TiRex-2)"
 ---
 
 # TiRex-2 (DIMER package v0.1.0) — Time-Series Foundation Model (Zero-Shot Probabilistic Forecasting)
@@ -11,7 +13,6 @@ base_model: NX-AI/TiRex-2
 [![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-NX--AI%2Ftirex--2-181717?style=flat&logo=github&logoColor=white)](https://github.com/NX-AI/tirex-2)
 [![arXiv Paper](https://img.shields.io/badge/arXiv-2607.01204-b31b1b.svg)](https://arxiv.org/abs/2607.01204)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://huggingface.co/NX-AI/TiRex-2/blob/05e5b26db52bfb256f1ae1bdf785589850482de3/LICENSE)
-[![Pipeline](https://img.shields.io/badge/Pipeline-tirex--forecasting--pipeline-2ea44f?style=flat&logo=github)](https://github.com/kurtvalcorza/tirex-forecasting-pipeline)
 
 > [!WARNING]
 > ⚠️ **Provided for research, training, and evaluation purposes only.** Model weights are redistributed unmodified under their upstream license, which controls your use, including any commercial use or redistribution; the accompanying code and notebooks are released under this repository's license. All of it is supplied **"as is"**, without warranty of any kind, and has not been validated for production, clinical, or safety-critical use. Running the notebooks downloads third-party weights and datasets governed by their own licenses and consumes compute on your own Colab/Kaggle account. To the maximum extent permitted by law, the maintainers of this repository and the DIMER platform accept no liability for any damages arising from their use. Hosting implies no affiliation with or endorsement by the original authors.
@@ -28,7 +29,7 @@ This pipeline provides a ready-to-run interactive Google Colab notebook that exe
 
 ---
 
-###### Description
+#### Description
 
 TiRex-2 is NX-AI's pretrained time-series foundation model for zero-shot univariate and multivariate forecasting, packaged here from `NX-AI/TiRex-2` at immutable revision `05e5b26db52bfb256f1ae1bdf785589850482de3`. The open model forecasts one or more target variates from history and can condition on past and future-known covariates without task-specific training. This repository adds immutable loading, finite-shape and covariate-alignment validation, normalized quantile/median outputs, chronological evaluation helpers, baselines, provenance, and a DIMER tutorial contract.
 
@@ -66,7 +67,7 @@ The portable reference environment is Python 3.12 with `tirex-2==0.2.1`, PyTorch
 
 ###### Performance Measures
 
-The repository reports `mae` and `rmse` on chronological holdouts. MAE measures average absolute error in the target's units and is easy to interpret, while RMSE weights larger errors more strongly and exposes a different failure mode. The tutorial also reports the same measures for a last-value baseline. These are tutorial/backtest metrics for the demonstrated series; upstream leaderboard numbers are not presented as measurements reproduced by this pipeline.
+The repository reports `mae` and `rmse` on chronological holdouts. MAE measures average absolute error in the target's units and is easy to interpret, while RMSE weights larger errors more strongly and exposes a different failure mode. The tutorial also reports the same measures for a last-value baseline. The public `evaluation_report` stage writes these measures, the q10–q90 `interval_coverage` and the baseline comparison to a machine-readable report whose verdict is `sample-sanity` on the withheld tutorial holdout and `not-measurable` when no truth is supplied. These are tutorial/backtest metrics for the demonstrated series; upstream leaderboard numbers are not presented as measurements reproduced by this pipeline.
 
 ###### Decision thresholds
 
@@ -88,7 +89,7 @@ The pipeline is not intended or certified for autonomous decisions in health, sa
 
 ###### Mitigations
 
-Implemented controls include an immutable Hugging Face revision passed through upstream `hf_kwargs`; exact `tirex-2` and core runtime pins; finite target and covariate checks; exact past/future covariate time-axis validation; explicit context and horizon ceilings; normalized quantile ordering; explicit q=0.5 median semantics; chronological tutorial backtesting; pre-pandas duplicate CSV-header rejection; last-value comparison; machine-readable repository/model provenance; upstream `weights_only=True` checkpoint deserialization; unit tests around output, metric, and covariate-shape contracts; and source validation that prevents notebook/model-card placeholders from shipping unnoticed.
+Implemented controls include an immutable Hugging Face revision passed through upstream `hf_kwargs`; a committed `dimer-base-manifest.json` whose per-file SHA-256 digests `verify_snapshot` re-checks before every load; the public `validate_inputs` stage, which applies the same target, horizon and covariate checks as `forecast` and writes an input manifest with any rejection recorded as a finding; exact `tirex-2` and core runtime pins; finite target and covariate checks; exact past/future covariate time-axis validation; explicit context and horizon ceilings; normalized quantile ordering; explicit q=0.5 median semantics; chronological tutorial backtesting; pre-pandas duplicate CSV-header rejection; last-value comparison; machine-readable repository/model provenance; upstream `weights_only=True` checkpoint deserialization; unit tests around output, metric, and covariate-shape contracts; and source validation that prevents notebook/model-card placeholders from shipping unnoticed.
 
 ###### Risks and harms
 
@@ -103,5 +104,6 @@ The pipeline must not be used for social scoring, unlawful discrimination, decep
 - Model: `NX-AI/TiRex-2`
 - Revision: `05e5b26db52bfb256f1ae1bdf785589850482de3`
 - Runtime package: `tirex-2==0.2.1`
+- Snapshot manifest: `weights/tirex-2/dimer-base-manifest.json` — `model.ckpt` SHA-256 `184b160ffbe4c01a26beeba14015ff3507c7497e1f3577114187bbc1d19fcac1` (380613375 bytes)
 - Upstream repository: https://github.com/NX-AI/tirex-2
 - Paper: https://arxiv.org/abs/2607.01204

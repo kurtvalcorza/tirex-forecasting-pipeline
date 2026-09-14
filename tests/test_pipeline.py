@@ -4,7 +4,7 @@ import types
 import numpy as np
 import pytest
 
-from tirex_forecasting_pipeline import TiRexForecastPipeline, last_value_baseline, mae
+from tirex_forecasting_pipeline import MODEL_REVISION, TiRexForecastPipeline, last_value_baseline, mae
 
 
 class FakeTimeseriesType:
@@ -94,9 +94,25 @@ def test_cpu_path_with_visible_gpu_and_no_toolkit_is_a_typed_error(monkeypatch, 
         TiRexForecastPipeline.from_pretrained(device=device)
 
 
-def test_cpu_path_with_resolved_toolkit_reaches_the_loader(monkeypatch):
+def test_cpu_path_with_resolved_toolkit_reaches_the_loader(monkeypatch, tmp_path):
     _stub_runtime(monkeypatch)
     _stub_cuda_toolkit(monkeypatch, cuda_home="/usr/local/cuda")
-    sys.modules["tirex2"].load_model = lambda *args, **kwargs: FakeModel()
-    pipeline = TiRexForecastPipeline.from_pretrained(device="cpu")
+    calls = []
+
+    def load_model(*args, **kwargs):
+        calls.append((args, kwargs))
+        return FakeModel()
+
+    sys.modules["tirex2"].load_model = load_model
+    # No snapshot in tmp_path: the explicit Hub path resolves MODEL_ID at the pinned revision.
+    pipeline = TiRexForecastPipeline.from_pretrained(device="cpu", weights_dir=tmp_path, allow_download=True)
     assert isinstance(pipeline, TiRexForecastPipeline)
+    assert pipeline.source == "hf-hub"
+    assert calls == [(("NX-AI/TiRex-2",), {"device": "cpu", "hf_kwargs": {"revision": MODEL_REVISION}})]
+
+
+def test_from_pretrained_refuses_without_snapshot_or_download(monkeypatch, tmp_path):
+    _stub_runtime(monkeypatch)
+    sys.modules["tirex2"].load_model = lambda *args, **kwargs: FakeModel()
+    with pytest.raises(FileNotFoundError, match="allow_download=False"):
+        TiRexForecastPipeline.from_pretrained(device="cpu", weights_dir=tmp_path)
