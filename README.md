@@ -43,3 +43,7 @@ For covariate-conditioned forecasting, the DIMER wrapper enforces the upstream t
 ## Release status
 
 **Candidate.** Static/unit checks do not constitute clean-runtime notebook evidence. The clean-runtime run of the standalone tutorial is pending; earlier local pre-flight runs of the previous (repository-installing) notebook are recorded in `docs/release-verification.md` and do not cover the standalone carrier. Complete that file against the exact release revision before calling the notebook release-grade. CPU is the portable reference path; CUDA has additional upstream compiler/kernel requirements and is not the default tutorial assumption. On a machine where a CUDA GPU is visible but no CUDA toolkit is installed, upstream `xlstm` fails at import even for `device="cpu"`; `from_pretrained` uses PyTorch's own toolkit resolution (`CUDA_HOME`/`CUDA_PATH`, `nvcc` on `PATH`, `/usr/local/cuda`) and raises a typed `RuntimeError` naming the fix (hide the GPU with `CUDA_VISIBLE_DEVICES=""` before importing torch, or set `CUDA_HOME`) only when none resolves.
+
+## AI Assistance Disclosure
+
+This tutorial and its accompanying documentation were developed with generative AI assistance for code development and technical writing under maintainer direction. The maintainer remains responsible for reviewing the implementation, validating results, and making release decisions. AI assistance does not constitute independent verification, provider endorsement, or release approval.
