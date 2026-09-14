@@ -7,7 +7,7 @@ date_published: "2026-06-16"
 date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/NX-AI/TiRex-2)"
 ---
 
-# TiRex-2 (DIMER package v0.1.0) — Time-Series Foundation Model (Zero-Shot Probabilistic Forecasting)
+# TiRex-2 — Time-Series Foundation Model (Zero-Shot Probabilistic Forecasting)
 
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-NX--AI%2FTiRex--2-ffcc4d?style=flat)](https://huggingface.co/NX-AI/TiRex-2)
 [![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-NX--AI%2Ftirex--2-181717?style=flat&logo=github&logoColor=white)](https://github.com/NX-AI/tirex-2)
