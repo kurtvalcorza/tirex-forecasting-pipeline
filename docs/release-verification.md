@@ -104,7 +104,7 @@ measurements for the stated runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| | | | Default sample path | | pending — queued to the GPU lane |
+| 2026-09-14 | `4863984` / `9af80d86af9c` | Kaggle CPU (`kurtvalcorza/dimer-nb2-tirex-forecasting` v1) | Default sample path | 262.0 s | **PASSED** — 10/10 ok code cells executed cleanly, 8 files, 381 MB staged |
 
 ### Previous repository-installing notebook (NOTEBOOK_SPEC 1.0) — audit trail, does not cover the standalone carrier
 
