@@ -32,7 +32,7 @@ This pipeline provides a ready-to-run interactive Google Colab notebook that exe
 
 #### Description
 
-TiRex-2 is NX-AI's pretrained time-series foundation model for zero-shot univariate and multivariate forecasting, packaged here from `NX-AI/TiRex-2` at immutable revision `05e5b26db52bfb256f1ae1bdf785589850482de3`. The open model forecasts one or more target variates from history and can condition on past and future-known covariates without task-specific training. This repository adds immutable loading, finite-shape and covariate-alignment validation, normalized quantile/median outputs, chronological evaluation helpers, baselines, provenance, and a DIMER tutorial contract.
+TiRex-2 is NX-AI's pretrained time-series foundation model for zero-shot univariate and multivariate forecasting, packaged here from `NX-AI/TiRex-2` at immutable revision `05e5b26db52bfb256f1ae1bdf785589850482de3`. The open model forecasts one or more target variates from history and can condition on past and future-known covariates without task-specific training. This repository adds immutable loading, finite-shape and covariate-alignment validation, normalized quantile/median outputs, chronological evaluation helpers, baselines, provenance, and a tutorial contract.
 
 #### Intended Use and Limitations
 
@@ -47,7 +47,7 @@ Primary users are forecasting practitioners, ML engineers, data scientists, quan
 ###### Out-of-scope use cases
 
 1. **Capability boundary:** the open TiRex-2 release in this repository does not expose fine-tuning, streaming updates, classification, or regression adaptations advertised separately as TiRex-2 Pro capabilities.
-2. **Input boundary:** the DIMER wrapper requires finite 1D/2D target arrays, at least 32 and at most 16,384 context steps, and a horizon of 1–4,096 steps. Optional `past_covariates` must contain exactly the target context length, and optional `future_covariates` must contain exactly `context_length + horizon` steps; misaligned covariates are rejected before model execution.
+2. **Input boundary:** the pipeline wrapper requires finite 1D/2D target arrays, at least 32 and at most 16,384 context steps, and a horizon of 1–4,096 steps. Optional `past_covariates` must contain exactly the target context length, and optional `future_covariates` must contain exactly `context_length + horizon` steps; misaligned covariates are rejected before model execution.
 3. **Decision boundary:** forecasts are not approved as sole inputs to high-consequence autonomous decisions without representative backtesting and human/domain oversight.
 
 #### Factors
@@ -86,7 +86,7 @@ Upstream identifies training mixtures that include public time-series collection
 
 ###### Human Life
 
-The pipeline is not intended or certified for autonomous decisions in health, safety, criminal justice, employment, credit, housing, or other high-impact settings. No external board has validated this DIMER wrapper for such decisions. If forecasting supports a sensitive operational process, admissible use requires qualified human oversight, representative historical backtesting, monitoring for regime change, documented fallback procedures, and any domain-specific regulatory or institutional review that applies.
+The pipeline is not intended or certified for autonomous decisions in health, safety, criminal justice, employment, credit, housing, or other high-impact settings. No external board has validated this wrapper for such decisions. If forecasting supports a sensitive operational process, admissible use requires qualified human oversight, representative historical backtesting, monitoring for regime change, documented fallback procedures, and any domain-specific regulatory or institutional review that applies.
 
 ###### Mitigations
 
@@ -98,7 +98,7 @@ Forecasts can be inaccurate under distribution shift, regime changes, sparse his
 
 ###### Use cases
 
-The pipeline must not be used for social scoring, unlawful discrimination, deceptive manipulation, covert surveillance, or automated denial/allocation of essential services based solely on an unvalidated forecast. It must not be used to smuggle future target information into evaluation covariates or to present leaked backtests as independent evidence. Use must comply with the Apache-2.0 upstream license, data-source terms, privacy obligations, and DIMER deployment policy.
+The pipeline must not be used for social scoring, unlawful discrimination, deceptive manipulation, covert surveillance, or automated denial/allocation of essential services based solely on an unvalidated forecast. It must not be used to smuggle future target information into evaluation covariates or to present leaked backtests as independent evidence. Use must comply with the Apache-2.0 upstream license, data-source terms, privacy obligations, and the policy of the deployment that runs the pipeline.
 
 ## Immutable provenance
 
