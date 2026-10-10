@@ -1,0 +1,162 @@
+[colab] Parsing notebook '/home/kurt/colab-runs/tirex-forecasting-pipeline-9ee5922-8ac531/tirex_forecasting_colab_9ee5922_colab-cli-t4.ipynb'...
+[colab] Executing cell 1/10 - Infrastructure: check the runtime, accelerator and disk; create (or keep) the run directory...
+{'accelerator': 'Tesla T4, 15360 MiB', 'kernel_python': '3.13.15', 'run_directory': '/content/dimer_runs/tirex_forecasting/7bd860dc1dce', 'outputs': '/content/outputs', 'weights': '/content/weights', 'environment_root': '/tmp/dimer_uv', 'free_gib': {'weights': 193.3, 'environment': 193.3}}
+[colab] Executing cell 2/10 - Infrastructure: write and verify the carried package, stage runner, lock, manifest and samples...
+{'carried_files': 9, 'verified': True, 'repository': 'kurtvalcorza/tirex-forecasting-pipeline', 'revision': '1df20d15d9128befbf3671e45fbc4f904b242398', 'generator': 'build_notebook.py/3.0'}
+[colab] Executing cell 3/10 - Infrastructure: build (or reuse) the isolated locked environment and define the stage runner...
+{'notebook_source': '1df20d15d9128befbf3671e45fbc4f904b242398', 'python': '3.12.12', 'torch': '2.8.0', 'tirex-2': '0.2.1', 'numpy': '2.3.3', 'pandas': '2.3.3', 'cuda': True, 'locked_packages': 57, 'environment': '/tmp/dimer_uv/venv-f3848bd09caed0ba', 'environment_reused': False, 'setup_seconds': 79}
+[colab] Executing cell 4/10 - Infrastructure: stage and digest-verify the pinned checkpoint...
+Running stage 'weights' in the isolated environment; log: /content/dimer_runs/tirex_forecasting/7bd860dc1dce/logs/weights.log
+{'model_id': 'NX-AI/TiRex-2', 'revision': '05e5b26db52bfb256f1ae1bdf785589850482de3', 'license': 'Apache-2.0', 'files': 3, 'total_bytes': 380620100}
+{'weights_dir': '/content/weights/tirex-2', 'fetched': ['README.md', 'model-config.yaml', 'model.ckpt']}
+{'verified': {'path': '/content/weights/tirex-2', 'format': 'dimer_hf_snapshot', 'formatVersion': 1, 'modelKey': 'tirex-2', 'modelId': 'NX-AI/TiRex-2', 'revision': '05e5b26db52bfb256f1ae1bdf785589850482de3', 'files': [{'path': 'README.md', 'bytes': 5521, 'sha256': 'ec10f277ff820fb8915b4ff3988916c25bc892167902aba84bb9bfe24d190b70'}, {'path': 'model-config.yaml', 'bytes': 1204, 'sha256': 'cddbe6d0be4919cb7b0cad747fb19a295264e129d1c0790cf62133b4cb5da727'}, {'path': 'model.ckpt', 'bytes': 380613375, 'sha256': '184b160ffbe4c01a26beeba14015ff3507c7497e1f3577114187bbc1d19fcac1'}], 'totalBytes': 380620100}, 'checkpoint': 'model.ckpt', 'note': 'model.ckpt is a PyTorch checkpoint (a pickle container); tirex2 loads it with weights_only, and it is accepted only at the pinned size and SHA-256'}
+[colab] Executing cell 5/10 - tirex_forecasting-15...
+Running stage 'data' in the isolated environment; log: /content/dimer_runs/tirex_forecasting/7bd860dc1dce/logs/data.log
+{'sample_kind': 'synthetic', 'name': 'synthetic_trend_season_256.csv', 'generator': '0.02·t + sin(t/8) + N(0, 0.05), seed 7', 'shape': [1, 256], 'horizon': 32, 'float32_sha256': '55e436de917b774696580863e4c474e7444bf0747db219e724711b46e10dbeee'}
+[colab] Executing cell 6/10 - tirex_forecasting-18...
+Running stage 'validate' in the isolated environment; log: /content/dimer_runs/tirex_forecasting/7bd860dc1dce/logs/validate.log
+{'ceilings': {'MIN_CONTEXT': 32, 'MAX_CONTEXT': 16384, 'MAX_HORIZON': 4096}}
+{
+  "schema": {
+    "input": "1D array (time) or 2D array (variates, time) of finite numbers, cast to float32",
+    "context_length": [
+      32,
+      16384
+    ],
+    "horizon": [
+      1,
+      4096
+    ],
+    "past_covariates": "optional (covariates, context_length), finite",
+    "future_covariates": "optional (covariates, context_length + horizon), finite",
+    "preprocessing": "none in this module; upstream tirex2 scales and patch-tokenises the context internally"
+  },
+  "inputs": [
+    {
+      "id": "synthetic-trend-season",
+      "context_length": 224,
+      "min": -0.28399893641471863,
+      "max": 5.291885852813721
+    }
+  ],
+  "horizon": 32,
+  "past_covariates": 0,
+  "future_covariates": 0,
+  "verdict": "accepted",
+  "findings": [
+    {
+      "input": "short-context-probe",
+      "verdict": "rejected",
+      "message": "context length must be between 32 and 16384"
+    }
+  ],
+  "model_id": "NX-AI/TiRex-2",
+  "model_revision": "05e5b26db52bfb256f1ae1bdf785589850482de3"
+}
+{'last_value_baseline': {'mae': 0.6729, 'rmse': 0.7468}}
+{'least_squares_trend_season': {'mae': 0.0437, 'rmse': 0.0576, 'period_steps': 50.2655}}
+{'noise_floor': {'mae': 0.0414, 'rmse': 0.0555}}
+[colab] Executing cell 7/10 - tirex_forecasting-21...
+Running stage 'forecast' in the isolated environment; log: /content/dimer_runs/tirex_forecasting/7bd860dc1dce/logs/forecast.log
+W1010 11:06:31.867000 1691 torch/utils/cpp_extension.py:118] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+W1010 11:06:32.020000 1691 torch/utils/cpp_extension.py:118] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+{'point_forecast': 'median (q=0.5)', 'horizon': 32, 'context_length': 224, 'n_variates': 1, 'device': 'cpu', 'source': 'local-snapshot', 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+step  1  median 4.6793  truth 4.7478  q10 4.5784  q90 4.8207
+step  2  median 4.6027  truth 4.6691  q10 4.4691  q90 4.7520
+step  3  median 4.5126  truth 4.4949  q10 4.3759  q90 4.6540
+step  4  median 4.4134  truth 4.4066  q10 4.2591  q90 4.5654
+step  5  median 4.3262  truth 4.2863  q10 4.1838  q90 4.4769
+[colab] Executing cell 8/10 - tirex_forecasting-24...
+Running stage 'evaluate' in the isolated environment; log: /content/dimer_runs/tirex_forecasting/7bd860dc1dce/logs/evaluate.log
+{
+  "task": "zero-shot probabilistic time-series forecasting",
+  "point_forecast": "median (q=0.5)",
+  "score_semantics": "quantile levels 0.1..0.9 are model quantiles, not calibrated confidence intervals",
+  "sample_kind": "synthetic",
+  "horizon": 32,
+  "context_length": 224,
+  "n_variates": 1,
+  "model_id": "NX-AI/TiRex-2",
+  "model_revision": "05e5b26db52bfb256f1ae1bdf785589850482de3",
+  "metrics": [
+    {
+      "id": "mae",
+      "value": 0.0491,
+      "estimation": "single chronological holdout, no dispersion estimate"
+    },
+    {
+      "id": "rmse",
+      "value": 0.0646,
+      "estimation": "single chronological holdout, no dispersion estimate"
+    },
+    {
+      "id": "interval_coverage",
+      "band": [
+        0.1,
+        0.9
+      ],
+      "value": 1.0,
+      "nominal": 0.8,
+      "estimation": "single chronological holdout, no dispersion estimate"
+    }
+  ],
+  "baselines": [
+    {
+      "id": "last_value_baseline",
+      "metrics": [
+        {
+          "id": "mae",
+          "value": 0.6729
+        },
+        {
+          "id": "rmse",
+          "value": 0.7468
+        }
+      ]
+    },
+    {
+      "id": "least_squares_trend_season",
+      "metrics": [
+        {
+          "id": "mae",
+          "value": 0.0437
+        },
+        {
+          "id": "rmse",
+          "value": 0.0576
+        }
+      ],
+      "what": "level + linear trend + one sine/cosine pair fitted to the context by least squares (4 parameters per variate)",
+      "period_steps": 50.2655,
+      "period_source": "the generator's own season (sin(t/8), 2\u03c0\u00b78 \u2248 50.27 steps): the right functional family, which is the point of the reference"
+    }
+  ],
+  "verdict": "sample-sanity",
+  "reason": "one chronological holdout of 32 step(s) on the tutorial sample; not a benchmark",
+  "needs": "repeated holdouts over representative periods of the deployment series for any generalisable claim",
+  "reference_points": [
+    {
+      "id": "noise_floor",
+      "metrics": [
+        {
+          "id": "mae",
+          "value": 0.0414
+        },
+        {
+          "id": "rmse",
+          "value": 0.0555
+        }
+      ],
+      "what": "the generator's own N(0, 0.05) noise on the holdout: no forecaster can expect to beat it"
+    }
+  ],
+  "coverage_granularity": "q10\u2013q90 coverage over 32 holdout point(s) moves in steps of 1/32 = 0.0312",
+  "interpretation": "TiRex median MAE 0.0491 vs last-value 0.6729 and least-squares trend + season 0.0437; noise floor 0.0414: on this synthetic series a 4-parameter fit of the right family already sits near the floor, so beating last-value says little about model skill"
+}
+[colab] Executing cell 9/10 - tirex_forecasting-27...
+Running stage 'export' in the isolated environment; log: /content/dimer_runs/tirex_forecasting/7bd860dc1dce/logs/export.log
+{'rows': 32, 'columns': ['variate', 'step', 'median', 'truth', 'last_value_baseline', 'least_squares_trend_season', 'q10', 'q20', 'q30', 'q40', 'q50', 'q60', 'q70', 'q80', 'q90'], 'runtime': {'python': '3.12.12', 'torch': '2.8.0', 'tirex-2': '0.2.1', 'numpy': '2.3.3', 'pandas': '2.3.3', 'device': 'cpu'}}
+['tirex_forecasting_evaluation_report.json', 'tirex_forecasting_forecast.csv', 'tirex_forecasting_input_manifest.json', 'tirex_forecasting_result.json']
+[colab] Executing cell 10/10 - tirex_forecasting-29...
+Optional activity skipped: tick RUN_ACTIVITY to run it. The canonical outputs are complete.
+[colab] Saving notebook with outputs to '/home/kurt/colab-runs/tirex-forecasting-pipeline-9ee5922-8ac531/tirex_forecasting_colab_9ee5922_colab-cli-t4_output.ipynb'...

@@ -1,95 +1,75 @@
 # Release verification
 
-`tutorials/tirex_forecasting_colab.ipynb` (`TASK-INFERENCE`, **standalone** carrier) is a **release
-candidate** until the exact notebook revision has executed top-to-bottom in a clean supported runtime.
-Unit tests, JSON validation, code-cell compilation, and `tools/validate_release_assets.py` are necessary
-checks but are **not** runtime evidence under DIMER Notebook Specification 1.1. This file is the
-durable release-gate record for the notebook.
+`tutorials/tirex_forecasting_colab.ipynb` (`TASK-INFERENCE`, `GUIDED`, **standalone** carrier, generator /3) is a
+**release candidate** until the exact notebook revision has executed top-to-bottom in a clean supported runtime with one
+**Run all** in the notebook kernel. Unit tests, JSON validation, code-cell compilation, and
+`tools/validate_release_assets.py` are necessary checks but are **not** runtime evidence under DIMER Notebook
+Specification 2.2. This file is the durable release-gate record for the notebook. The executions recorded below ran the
+previous (/2, in-kernel install) notebook; they do not carry over to the regenerated notebook.
 
 ## Automatic coverage (static, every pull request)
 
 CI runs `tools/validate_release_assets.py`, which checks:
 
-- notebook JSON parses; every code cell compiles as plain Python (no `%`/`!` magics); no
-  persisted outputs or execution counts; no unresolved placeholder markers; every code cell
-  is preceded by an explanatory markdown cell;
-- exactly one tutorial notebook, named in `tutorials/README.md` with its `TASK-INFERENCE`
-  profile, the notebook-spec version and the standalone carrier; `metadata.dimer` declares that profile, spec `1.1`,
-  `standalone: true` and `generated_from` (repository, generating revision, the carried modules, their concatenated
-  SHA-256, generator);
-- the standalone carrier (ST1–ST6, PAR1–PAR3): no clone, repository install or repository import on the
-  primary path; one cell tagged `embedded_module` per carried module (`src/tirex_forecasting_pipeline/evaluation.py`,
-  `validation.py`, `pipeline.py`, in dependency order), each equal to the module after the generator's documented
-  rewrites (working-directory-relative weights directory; package-relative imports removed); the inline `MANIFEST`
-  equal to the committed snapshot manifest and the inline `PINS` equal to the `pyproject.toml` runtime pins; the
-  notebook byte-identical to `tools/build_notebook.py` output; the pinned-install cell with its restart-on-stale-import
-  guard; `NOTEBOOK_SOURCE` recorded in exports;
-- `MODEL_ID`/`MODEL_REVISION` are bound only in the carried module cells (and repeated in the inline manifest,
-  which the notebook asserts against the module before fetching), the revision is a 40-hex immutable commit, and the
-  same identity string appears in `README.md`, `MODEL_CARD.md`, and `docs/WEIGHTS.md` with no stray revisions;
-- the profile-specific public-API calls (`stage_missing_files`, `verify_snapshot`,
-  `TiRexForecastPipeline.from_pretrained(weights_dir=...)`, `validate_inputs`, `forecast`, `evaluation_report`,
-  `last_value_baseline`), the ceiling print (`MIN_CONTEXT`, `MAX_CONTEXT`, `MAX_HORIZON`), the chronological holdout
-  (`context = series[:, :-HORIZON]`, `truth = series[:, -HORIZON:]`), the exports, the learner-facing forecasting
-  statements (median semantics, model quantiles are not confidence intervals, last-value baseline, no fine-tuning)
-  and the gated-off BYOD default listed in the validator; forbidden patterns (credential-in-URL, any `git clone` /
-  `github.com` / repository import on the primary path, a mutable `revision='main'`, direct `tirex2` /
-  `huggingface_hub` use **outside the carried module cells**, any worker process or subprocess outside the
-  generator-owned install cell, `trust_remote_code=True`, `pickle.load`, `torch.load(`, `extractall(`);
-- `STATUS.md`, `README.md` and `tutorials/README.md` agree on one release-status token and no
-  document makes an unsupported release-grade, production-readiness or benchmark claim;
+- notebook JSON parses; every code cell compiles as plain Python (no `%`/`!` magics); no persisted outputs or execution
+  counts; no unresolved placeholder markers (including template braces in markdown); every code cell is preceded by an
+  explanatory markdown cell;
+- exactly one tutorial notebook, named in `tutorials/README.md` with its `TASK-INFERENCE` profile, the spec version
+  (`2.2`) and the standalone carrier; `metadata.dimer` declares the profile, mode `GUIDED`, `standalone: true` and
+  `generated_from` (repository, generating revision, package paths and SHA-256, carried-file digests, generator
+  `build_notebook.py/3.0`);
+- the standalone carrier and isolated environment (ST1–ST6, PAR1–PAR3, RUN1, RUN10, ENV6): one carrier cell whose
+  carried files equal the repository files (`src/tirex_forecasting_pipeline/{__init__,evaluation,pipeline,validation}.py`,
+  the stage runner, `tutorials/requirements-colab.lock.txt`, the 3-file snapshot manifest, `LICENSE`) with matching
+  digests; the lock pins every `pyproject.toml` runtime pin with hashes; a pinned `uv` builds a managed-CPython
+  environment with `--require-hashes`, reused per lock digest; no in-kernel install and no restart instruction; the four
+  Infrastructure cells are titled and collapsed; every learner cell runs a stage; the notebook byte-identical to
+  `tools/build_notebook.py` output;
+- the stage-runner markers (staging and verification, the synthetic generator, the BYOD header, delimiter, numeric,
+  timestamp and trim checks, the chronological holdout, `validate_inputs` with the short-context probe, the last-value
+  baseline, the least-squares trend + season reference and the noise floor, the CPU-only model load with the GPU hidden,
+  `forecast`, `evaluation_report` with the added reference points and coverage granularity, the provenance record), the
+  form-parameter defaults (calls that appear only in comments do not count), no quality `assert`, and the forbidden
+  patterns (credential-in-URL, any clone or repository import on the primary path, a mutable revision, model-library use
+  in the notebook's own cells, `trust_remote_code=True`, `pickle.load`, `torch.load(`, `extractall(`);
+- `STATUS.md`, `README.md` and `tutorials/README.md` agree on one release-status token and no document makes an
+  unsupported release-grade, production-readiness or benchmark claim;
 - `MODEL_CARD.md` front matter, single H1, required heading order, and immutable provenance.
 
-CI also runs `ruff`, `tools/build_notebook.py --check`, and the offline unit suite (`tests/test_pipeline.py`,
-`tests/test_snapshot.py`, `tests/test_role_helpers.py`, `tests/test_notebook_parity.py`, `tests/test_release_assets.py`;
-stubbed `tirex2`, no weights). These are source/provenance and unit checks. They are **not** execution evidence.
+CI also runs `ruff`, `tools/build_notebook.py --check`, and the offline unit suite (`tests/`; stubbed `tirex2`, no
+weights), including `tests/test_release_assets.py` (negative controls proving the validator discriminates) and
+`tests/test_notebook_review_fixes.py` (the notebook's own cells with stand-ins, and the model-free stages). These are
+source and unit checks. They are **not** execution evidence.
 
 ## Executor paths
 
 | Path | Runtime | Role |
 |---|---|---|
-| Google Colab (supported user path) | Colab CPU runtime | The runtime the tutorial is written for; a clean top-to-bottom run here is promotion evidence |
-| Kaggle CLI kernel | Kaggle CPU kernel, Python 3.12 image | Reproducible clean-room executor of the same class; the notebook is pushed verbatim plus one leading shim cell that provides `google.colab` and chdirs to a scratch directory (no repository checkout is needed — the notebook is standalone) |
-| Kaggle CLI kernel, fresh-interpreter harness | Same Kaggle container; the committed notebook is executed verbatim, cell by cell, by `run_nb.py` in a subprocess of the container Python | Used when the kernel pre-imports a distribution the pinned install replaces (numpy 2.0.2 vs the pinned 2.3.3): the stale-import guard correctly halts the in-kernel path, so the verbatim notebook runs in a fresh interpreter instead; the evidence cell proves the executed file equals the committed blob |
-| Local WSL harness (pre-flight only) | Workstation, `run_nb.py` sequential cell executor with a `google.colab` shim | Builder pre-flight to catch defects before spending cloud runs; **not** a supported runtime and not promotion evidence |
+| Google Colab (supported user path) | Colab CPU runtime; any kernel Python — the stages run on the isolated environment's CPython 3.12.12 | The runtime the tutorial is written for; a clean one-pass **Run all** in the notebook kernel is promotion evidence |
+| Kaggle notebook kernel | Kaggle CPU kernel; the committed notebook run verbatim with **Run all** (no repository checkout) | Reproducible clean-room executor of the same class; the kernel's preloaded numpy no longer matters, because nothing is installed into the kernel |
+| Local harness (pre-flight only) | Workstation, sequential cell executor, stand-ins | Builder pre-flight to catch defects before spending cloud runs; **not** a supported runtime and not promotion evidence |
 
 ## Supported release verification procedure
 
 Before changing the registry status from `Candidate` to `Release-grade`:
 
 1. resolve the exact PR/commit head under review and confirm static CI is green;
-2. open that exact notebook revision in a new CPU runtime (Colab, or the Kaggle executor above) with
-   **no repository checkout** and a clean model cache;
-3. run the notebook top-to-bottom without editing implementation cells (form parameters at their
-   defaults for the sample path: `USE_BYOD = False`);
-4. verify that Section 1 reports `NOTEBOOK_SOURCE.repository_revision` equal to the revision recorded in
-   `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS` (= `pyproject.toml`);
-5. verify every default-path stage completes:
-   - pinned runtime installed from the inline `PINS` with no GitHub access;
-   - the three carried module cells execute (define `TiRexForecastPipeline`, `validate_inputs`, `evaluation_report`,
-     the metric helpers and the ceilings) with no import of the repository package;
-   - pinned `NX-AI/TiRex-2` acquisition at the immutable revision through the package: the inline `MANIFEST` is
-     asserted against the module identity and written to `weights/tirex-2/`, `stage_missing_files(WEIGHTS_DIR,
-     allow_download=True)` reports all three manifest entries (`README.md`, `model-config.yaml`, `model.ckpt`) on a
-     clean runtime, `verify_snapshot` returns the manifest dict, and `from_pretrained(weights_dir=WEIGHTS_DIR)`
-     reports `source == 'local-snapshot'`;
-   - deterministic synthetic sample (256 steps, seed 7) with its float32 SHA-256 printed, the ceilings surfaced,
-     the final 32 steps withheld chronologically and the last-value baseline computed from the context;
-   - `validate_inputs` writes `outputs/tirex_forecasting_input_manifest.json` (verdict `accepted`, one recorded
-     rejection finding from the short-context probe);
-   - zero-shot forecast through `forecast(context, horizon=HORIZON)` with q=0.1–0.9 outputs, `point_forecast ==
-     'median (q=0.5)'`, context 224 / horizon 32;
-   - `evaluation_report` writes `outputs/tirex_forecasting_evaluation_report.json` with verdict `sample-sanity`
-     carrying `mae`, `rmse`, `interval_coverage` and the `last_value_baseline` comparison (the previous notebook's
-     runs recorded MAE 0.049102 / RMSE 0.064577 vs baseline 0.672854 / 0.746826 on the same sample and holdout;
-     the standalone path must be measured, not assumed to reproduce them);
-   - `outputs/tirex_forecasting_result.json` and `outputs/tirex_forecasting_forecast.csv` written with
-     `NOTEBOOK_SOURCE`, model revision, model licence, runtime versions and device;
-6. verify the exports exist and the interpretation section matches the observed path;
-7. record the notebook Git blob id, commit, runtime (platform, Python, PyTorch, tirex-2, device),
-   model identifier and immutable revision, whether the model cache was clean, outcome, produced
-   outputs, and any warning or applicable `SHOULD` deviation in the table below;
-8. record no access tokens or other secrets.
+2. open that exact notebook revision in a new runtime (Colab CPU, or a Kaggle notebook kernel) with **no repository
+   checkout** and a clean model cache;
+3. choose **Run all** once with the defaults (`USE_BYOD = False`, `HORIZON = 32`, `SEASON_PERIOD = 0.0`,
+   `RUN_ACTIVITY = False`); no restart is expected; then re-run the export cell (Section 8) once;
+4. verify the carried-file verification and the isolated environment's versions (CPython 3.12.12, `torch` 2.8.0,
+   `tirex-2` 0.2.1, `numpy` 2.3.3, `pandas` 2.3.3); the 3-file snapshot staged and verified; the synthetic sample's
+   float32 SHA-256 `55e436de…`; context 224 / horizon 32; the input manifest with the short-context refusal; last-value
+   MAE 0.6729 / RMSE 0.7468, the least-squares trend + season reference 0.0437 / 0.0576 and the noise floor
+   0.0414 / 0.0555; the forecast on the CPU with `point_forecast == 'median (q=0.5)'`; the evaluation report
+   (`sample-sanity`, the model's MAE / RMSE — the previous notebook's runs recorded 0.049102 / 0.064577 on the same sample;
+   the regenerated path must be measured, not assumed to reproduce them — coverage and its granularity, the
+   interpretation line); the CSV and result JSON with source, model identity, licence and runtime;
+5. record the notebook Git blob id, commit, executor (**Run all** in the notebook kernel), `restarted: false`, runtime
+   (platform, Python, PyTorch, tirex-2, device), model identifier and immutable revision, whether the model cache was
+   clean, outcome, metrics and outputs in the table below;
+6. record no access tokens or other secrets.
 
 A known-failing default path in the supported runtime blocks release.
 
@@ -100,11 +80,17 @@ Notebook identity is the Git blob id of `tutorials/tirex_forecasting_colab.ipynb
 times reported by the executor and include installs and the model download; they are
 measurements for the stated runtime, not general estimates.
 
-### Standalone carrier (NOTEBOOK_SPEC 1.1 §3.6) — current notebook
+### Standalone carrier, isolated-environment notebook (2026-10-05 review fixes)
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| 2026-09-14 | `4863984` / `9af80d86af9c` | Kaggle CPU (`kurtvalcorza/dimer-nb2-tirex-forecasting` v1) | Default sample path | 262.0 s | **PASSED** — 10/10 ok code cells executed cleanly, 8 files, 381 MB staged |
+| 2026-10-10 (11:04:52 UTC start) | `9ee5922bdef169be73966452e6595ca51d495e28` / `1fd4afa76a0f9a12c578118fd671bdb27e14fd26` (carried revision `1df20d15d912`, generator `build_notebook.py/3.0`) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-tirex-9ee5922-8ac5`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, stage subprocesses in an isolated CPython 3.12.12 environment (57 locked packages, setup 79 s, not reused), `torch 2.8.0`, `tirex-2 0.2.1`; forecast on `cpu` by design | Default sample path, `RUN_ACTIVITY` off | 138.2 s | **PASSED** — one pass, no restart, 0 errors; 10/10 code cells in order; 3 snapshot files digest-verified at `05e5b26db52b`; short-context probe rejected; MAE 0.0491, RMSE 0.0646, 0.1–0.9 band coverage 1.0 (nominal 0.8); last-value MAE 0.6729, least-squares trend+season 0.0437, noise floor 0.0414; 4 outputs written. Evidence in `docs/execution-evidence/2026-10-10-9ee5922/`: executed notebook SHA-256 `ee278f969b99451e5d9b432669ebdc1c44b2f839ad51da2bceedf38330b5db69`, `run_summary.json` `cb9ea22582a9b73de321e1acf564ae6a35ce4085434dd69cacbebbcce2fd9526`, `exec.log` `1341efad807d79545726567f71016594d4da27b3e0eeaab9e09e9bbbc06707b9`. Not exercised: the optional activity, BYOD, a browser Run all |
+
+### Standalone carrier, in-kernel-install notebook (generated under NOTEBOOK_SPEC 2.0) — superseded by the 2026-10-05 review fixes
+
+| Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
+|---|---|---|---|---|---|
+| 2026-09-14 | `4863984` / `9af80d86af9c` (`9af80d86af9c54e79db3c4862102347de358c1a1`; fetched blob verified) | Kaggle CPU (`kurtvalcorza/dimer-nb2-tirex-forecasting` v1, batch run, image `gcr.io/kaggle-images/python@sha256:dafd4ce5…`, Linux 6.12.90, Python 3.12.13, 4 CPUs, no GPU); fresh-interpreter executor (nbclient), clean Hugging Face cache; after the in-kernel install torch 2.8.0+cu128, numpy 2.3.3, pandas 2.3.3, device `cpu` | Default sample path | 262.0 s (pass 1 213.2 s + pass 2 48.7 s) | **PASSED only after a restart** (`restarted: true`; not REL2 evidence under NOTEBOOK_SPEC 2.2) — pass 1 stopped in the install cell at the stale-module guard (`numpy: loaded=2.0.2, installed=2.3.3`), pass 2 ran 10/10 code cells ok; 3-file snapshot staged (381 MB, `model.ckpt` 380,613,375 B); context 224 / horizon 32; TiRex MAE 0.049102 / RMSE 0.064577, q10–q90 coverage 1.0 (nominal 0.8); last-value MAE 0.672854 / RMSE 0.746826; verdict `sample-sanity`; outputs: evaluation report `461047aa…`, forecast CSV `b41f033d…`, input manifest `a45fa667…`, result JSON `c0baf5f0…` (SHA-256); evidence in the workspace under `.agent/backups/kaggle-pass-2026-09-14/out/dimer-nb2-tirex-forecasting/v1/` |
 
 ### Previous repository-installing notebook (NOTEBOOK_SPEC 1.0) — audit trail, does not cover the standalone carrier
 
@@ -119,18 +105,4 @@ Pre-flight runtime: WSL2 Ubuntu 24.04 (kernel 6.18.33), Python 3.12.3, Intel Cor
 
 ## Current status
 
-**No clean-runtime execution of the standalone notebook has been recorded yet**; the run is **pending** and
-queued to the GPU lane. The rows above under the previous notebook prove that the pipeline's forecast path,
-the pinned checkpoint fetch and the sample/holdout produced stable metrics in a clean Kaggle container, but they
-executed the earlier repository-installing carrier: the standalone path (carried module cells, inline manifest,
-`stage_missing_files` through `hf_hub_download`, `verify_snapshot` over the real 380 MB checkpoint, and
-`tirex2.load_model` on the verified directory) has been validated statically only (parity PASS, carrier probe with
-the repository package blocked) and never run. Static validation (`tools/validate_release_assets.py`), nbformat
-validation, a `compile()` sweep over every code cell, and the offline unit suite passed on the tutorial source at
-the candidate revision, which is necessary but not sufficient. The registry status remains **Candidate** until a
-reviewer confirms a recorded run against the notebook blob under review and an integrator promotes it; promotion
-is not performed by the builder. Two facts a reviewer should weigh: `stage_missing_files` was exercised only with
-an injected downloader in the unit suite (the real `hf_hub_download` fetch of all three manifest entries into a
-fresh `weights/tirex-2/` has not been executed), and `from_pretrained(weights_dir=...)` was exercised only with a
-stubbed `tirex2.load_model`; the clean run will be the first execution of the standalone path, of the staging path,
-and of the local-directory loading path against the real weights.
+**Candidate.** The 2026-10-10 Colab T4 row above is the one-pass record of the current notebook; the 2026-09-14 row was the earlier run of the standalone carrier. It executed the previous notebook (blob `9af80d86`), whose in-kernel install stopped Run all at the stale-module guard, so it passed only after a restart and is not REL2 evidence under NOTEBOOK_SPEC 2.2. The regenerated notebook of the 2026-10-05 review fixes (isolated hash-locked environment, no in-kernel install, no restart) ran once on 2026-10-10: blob `1fd4afa76a0f` (commit `9ee5922`) completed one pass with no restart and 0 errors on a fresh Colab Tesla T4 VM on 2026-10-10 (Colab CLI 0.7.4 sequential execution, 10/10 code cells, 138.2 s, forecast on the CPU reference path; MAE 0.0491 against last-value 0.6729, least-squares 0.0437 and noise floor 0.0414). Static validation and the offline unit suite are necessary but not sufficient. Promotion to Release-grade is an integrator decision.

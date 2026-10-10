@@ -301,9 +301,11 @@ class TiRexForecastPipeline:
 
         if device.startswith("cpu") and torch.cuda.is_available():
             # Upstream xlstm resolves CUDA include paths at import time whenever a GPU is
-            # visible, even though CPU inference never compiles a kernel. Use torch's own
-            # resolution (CUDA_HOME, CUDA_PATH, nvcc on PATH, /usr/local/cuda) as the oracle and
-            # surface a typed error instead of letting an OSError escape from inside the import.
+            # visible, even though CPU inference compiles no CUDA kernel (tirex-2's torch.compile of the
+            # residual block does compile CPU code with TorchInductor, which needs a C++ compiler).
+            # Use torch's own resolution (CUDA_HOME, CUDA_PATH, nvcc on PATH, /usr/local/cuda)
+            # as the oracle and surface a typed error instead of letting an OSError escape from inside
+            # the import.
             from torch.utils.cpp_extension import CUDA_HOME
 
             if CUDA_HOME is None:
