@@ -80,11 +80,11 @@ Notebook identity is the Git blob id of `tutorials/tirex_forecasting_colab.ipynb
 times reported by the executor and include installs and the model download; they are
 measurements for the stated runtime, not general estimates.
 
-### Standalone carrier (NOTEBOOK_SPEC 1.1 §3.6) — current notebook
+### Standalone carrier, in-kernel-install notebook (generated under NOTEBOOK_SPEC 2.0) — superseded by the 2026-10-05 review fixes
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| 2026-09-14 | `4863984` / `9af80d86af9c` | Kaggle CPU (`kurtvalcorza/dimer-nb2-tirex-forecasting` v1) | Default sample path | 262.0 s | **PASSED** — 10/10 ok code cells executed cleanly, 8 files, 381 MB staged |
+| 2026-09-14 | `4863984` / `9af80d86af9c` (`9af80d86af9c54e79db3c4862102347de358c1a1`; fetched blob verified) | Kaggle CPU (`kurtvalcorza/dimer-nb2-tirex-forecasting` v1, batch run, image `gcr.io/kaggle-images/python@sha256:dafd4ce5…`, Linux 6.12.90, Python 3.12.13, 4 CPUs, no GPU); fresh-interpreter executor (nbclient), clean Hugging Face cache; after the in-kernel install torch 2.8.0+cu128, numpy 2.3.3, pandas 2.3.3, device `cpu` | Default sample path | 262.0 s (pass 1 213.2 s + pass 2 48.7 s) | **PASSED only after a restart** (`restarted: true`; not REL2 evidence under NOTEBOOK_SPEC 2.2) — pass 1 stopped in the install cell at the stale-module guard (`numpy: loaded=2.0.2, installed=2.3.3`), pass 2 ran 10/10 code cells ok; 3-file snapshot staged (381 MB, `model.ckpt` 380,613,375 B); context 224 / horizon 32; TiRex MAE 0.049102 / RMSE 0.064577, q10–q90 coverage 1.0 (nominal 0.8); last-value MAE 0.672854 / RMSE 0.746826; verdict `sample-sanity`; outputs: evaluation report `461047aa…`, forecast CSV `b41f033d…`, input manifest `a45fa667…`, result JSON `c0baf5f0…` (SHA-256); evidence in the workspace under `.agent/backups/kaggle-pass-2026-09-14/out/dimer-nb2-tirex-forecasting/v1/` |
 
 ### Previous repository-installing notebook (NOTEBOOK_SPEC 1.0) — audit trail, does not cover the standalone carrier
 
@@ -99,18 +99,4 @@ Pre-flight runtime: WSL2 Ubuntu 24.04 (kernel 6.18.33), Python 3.12.3, Intel Cor
 
 ## Current status
 
-**No clean-runtime execution of the standalone notebook has been recorded yet**; the run is **pending** and
-queued to the GPU lane. The rows above under the previous notebook prove that the pipeline's forecast path,
-the pinned checkpoint fetch and the sample/holdout produced stable metrics in a clean Kaggle container, but they
-executed the earlier repository-installing carrier: the standalone path (carried module cells, inline manifest,
-`stage_missing_files` through `hf_hub_download`, `verify_snapshot` over the real 380 MB checkpoint, and
-`tirex2.load_model` on the verified directory) has been validated statically only (parity PASS, carrier probe with
-the repository package blocked) and never run. Static validation (`tools/validate_release_assets.py`), nbformat
-validation, a `compile()` sweep over every code cell, and the offline unit suite passed on the tutorial source at
-the candidate revision, which is necessary but not sufficient. The registry status remains **Candidate** until a
-reviewer confirms a recorded run against the notebook blob under review and an integrator promotes it; promotion
-is not performed by the builder. Two facts a reviewer should weigh: `stage_missing_files` was exercised only with
-an injected downloader in the unit suite (the real `hf_hub_download` fetch of all three manifest entries into a
-fresh `weights/tirex-2/` has not been executed), and `from_pretrained(weights_dir=...)` was exercised only with a
-stubbed `tirex2.load_model`; the clean run will be the first execution of the standalone path, of the staging path,
-and of the local-directory loading path against the real weights.
+**Candidate — verification pending.** The 2026-09-14 row above is the only recorded run of the standalone carrier. It executed the previous notebook (blob `9af80d86`), whose in-kernel install stopped Run all at the stale-module guard, so it passed only after a restart and is not REL2 evidence under NOTEBOOK_SPEC 2.2. The regenerated notebook of the 2026-10-05 review fixes (isolated hash-locked environment, no in-kernel install, no restart) has not been run yet; its first one-pass Run all in a notebook kernel will be recorded here with the fields listed in the procedure above. Static validation and the offline unit suite are necessary but not sufficient. Promotion to Release-grade is an integrator decision.

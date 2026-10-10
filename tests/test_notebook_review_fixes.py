@@ -333,3 +333,27 @@ def test_m2_short_and_irregular_series_are_refused(tmp_path) -> None:
     frame.drop(index=10).to_csv(gap, index=False)
     with pytest.raises(ValueError, match=r"gap\.csv: timestamps must be regularly spaced"):
         _quiet(STAGES.stage_data, _run(tmp_path / "b", {"use_byod": True, "byod_csv_path": str(gap), "horizon": 32}))
+
+
+def test_stage_processes_import_neither_ipython_nor_google_colab() -> None:
+    """Stages run in the isolated environment, which has neither IPython nor google.colab: only kernel cells may use
+    them (the BYOD upload dialog). A carried module that imported either would fail on Colab; there is no worker and
+    no google.colab stub to give a ModuleSpec (swin2sr-x4-super-resolution-pipeline 34eac6c pattern)."""
+    build = _load("trx_build_notebook_carried", TOOLS / "build_notebook.py")
+    template = _load("trx_notebook_template_carried", TOOLS / "notebook_template.py").TEMPLATE
+    carried = [ROOT / source for dest, source in build.carried_sources(ROOT, template).items() if dest.endswith(".py")]
+    assert any(path.name == "tutorial_stages.py" for path in carried)
+    assert any(path.name == "pipeline.py" for path in carried)
+    offenders = [str(path) for path in carried if re.search(r"^\s*(from|import)\s+(IPython|google)\b", path.read_text(encoding="utf-8"), re.M)]
+    assert not offenders, offenders
+    text = NB.read_text(encoding="utf-8")
+    assert "sys.modules['google" not in text and 'sys.modules[\\"google' not in text and "_WORKER_SOURCE" not in text
+
+
+def test_cpu_path_names_its_runtime_cpp_compiler() -> None:
+    """tirex-2 0.2.1 decorates its residual block with @torch.compile, so the CPU forecast compiles C++ through
+    TorchInductor on first use. Probed in a lock-only venv without g++: `InvalidCxxCompiler` at the first forecast.
+    The notebook must say that the runtime needs a C++ compiler and name the error in Troubleshooting."""
+    md = _md()
+    assert "needs a C++ compiler (`g++`)" in md
+    assert "`InvalidCxxCompiler`" in md
