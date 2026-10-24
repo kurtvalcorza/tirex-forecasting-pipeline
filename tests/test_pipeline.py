@@ -1,10 +1,13 @@
 import sys
 import types
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from tirex_forecasting_pipeline import MODEL_REVISION, TiRexForecastPipeline, last_value_baseline, mae
+from tirex_forecasting_pipeline import pipeline as pipeline_mod
+from tirex_forecasting_pipeline.pipeline import MANIFEST_NAME
 
 
 class FakeTimeseriesType:
@@ -98,21 +101,27 @@ def test_cpu_path_with_resolved_toolkit_reaches_the_loader(monkeypatch, tmp_path
     _stub_runtime(monkeypatch)
     _stub_cuda_toolkit(monkeypatch, cuda_home="/usr/local/cuda")
     calls = []
+    (tmp_path / MANIFEST_NAME).write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(pipeline_mod, "ensure_converted", lambda root, **kw: Path(root) / "model.safetensors")
 
-    def load_model(*args, **kwargs):
-        calls.append((args, kwargs))
+    def load_converted_model(root, **kwargs):
+        calls.append((root, kwargs))
         return FakeModel()
 
-    sys.modules["tirex2"].load_model = load_model
-    # No snapshot in tmp_path: the explicit Hub path resolves MODEL_ID at the pinned revision.
+    monkeypatch.setattr(pipeline_mod, "load_converted_model", load_converted_model)
     pipeline = TiRexForecastPipeline.from_pretrained(device="cpu", weights_dir=tmp_path, allow_download=True)
     assert isinstance(pipeline, TiRexForecastPipeline)
-    assert pipeline.source == "hf-hub"
-    assert calls == [(("NX-AI/TiRex-2",), {"device": "cpu", "hf_kwargs": {"revision": MODEL_REVISION}})]
+    assert pipeline.source == "local-snapshot"
+    assert calls == [(tmp_path, {"device": "cpu", "weights": tmp_path / "model.safetensors"})]
 
 
-def test_from_pretrained_refuses_without_snapshot_or_download(monkeypatch, tmp_path):
+@pytest.mark.parametrize("allow_download", [False, True])
+def test_from_pretrained_refuses_without_a_snapshot(monkeypatch, tmp_path, allow_download):
+    """No Hub-direct load: without a snapshot manifest nothing is downloaded or deserialised."""
     _stub_runtime(monkeypatch)
-    sys.modules["tirex2"].load_model = lambda *args, **kwargs: FakeModel()
-    with pytest.raises(FileNotFoundError, match="allow_download=False"):
-        TiRexForecastPipeline.from_pretrained(device="cpu", weights_dir=tmp_path)
+    sys.modules["tirex2"].load_model = lambda *a, **k: pytest.fail("tirex2.load_model must not be called")
+    with pytest.raises(FileNotFoundError, match="served only from a verified snapshot") as excinfo:
+        TiRexForecastPipeline.from_pretrained(
+            device="cpu", weights_dir=tmp_path, allow_download=allow_download
+        )
+    assert MODEL_REVISION in str(excinfo.value)

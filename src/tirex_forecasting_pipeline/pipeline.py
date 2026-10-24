@@ -1,10 +1,12 @@
 """Zero-shot probabilistic forecasting with the pinned ``NX-AI/TiRex-2`` checkpoint.
 
-The class loads the checkpoint only from a digest-verified local snapshot (``weights/<key>/``:
-``model-config.yaml`` + ``model.ckpt``) or, when explicitly allowed, from the Hugging Face Hub at
-the pinned revision. Model construction and checkpoint deserialisation happen inside the upstream
-``tirex2`` package (``weights_only`` PyTorch state-dict loading); this module never executes
-model-repository code.
+The model is served only from a digest-verified local snapshot (``weights/<key>/``:
+``model-config.yaml`` + ``model.ckpt``, staged at the pinned revision). The pickle checkpoint is read
+once, after its digest check, with ``torch.load(weights_only=True)`` and converted to
+``model.safetensors`` (byte-reproducible, SHA-256 pinned in ``CONVERTED_SHA256``). The network is
+then built from ``model-config.yaml`` exactly as ``tirex2.load_model`` builds it and loaded from the
+safetensors file with ``load_state_dict(strict=True)``; nothing deserialises the pickle again and this
+module never executes model-repository code.
 """
 
 from __future__ import annotations
@@ -29,6 +31,11 @@ DEFAULT_WEIGHTS_DIR = Path(__file__).resolve().parents[2] / "weights" / MODEL_KE
 MANIFEST_NAME = "dimer-base-manifest.json"
 CONFIG_FILE = "model-config.yaml"
 WEIGHTS_FILE = "model.ckpt"
+# SHA-256 of model.ckpt, equal to its manifest entry
+SOURCE_SHA256 = "184b160ffbe4c01a26beeba14015ff3507c7497e1f3577114187bbc1d19fcac1"
+CONVERTED_FILE = "model.safetensors"
+CONVERTED_SHA256 = "7a97f73883d8466552afa79347d44f7730ca91dd82aa345606e8d339dbbe0c72"
+CONVERSION_FORMAT = "tirex2-state-dict-safetensors-v1"
 QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 MEDIAN_INDEX = 4  # QUANTILES[4] == 0.5: the point forecast is the model median, not a mean
 POINT_FORECAST = "median (q=0.5)"
@@ -105,6 +112,93 @@ def stage_missing_files(
     for relative_path in missing:
         fetch(relative_path, root)
     return missing
+
+
+def canonical_safetensors(data: bytes) -> bytes:
+    """Re-emit a safetensors header as sorted, compact JSON padded to 8 bytes; the data is unchanged.
+
+    ``safetensors.torch.save`` (0.8.0) writes ``__metadata__`` in hash-map order, so equal inputs can give
+    different bytes. Tensor offsets are relative to the end of the header, so re-ordering keeps them valid."""
+    size = int.from_bytes(data[:8], "little")
+    header = json.loads(data[8 : 8 + size])
+    text = json.dumps(header, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    text += b" " * (-len(text) % 8)
+    return len(text).to_bytes(8, "little") + text + data[8 + size :]
+
+
+def convert_checkpoint(
+    source: str | Path, destination: str | Path, *, expected_sha256: str = SOURCE_SHA256
+) -> dict[str, Any]:
+    """Convert ``model.ckpt`` to safetensors once; return the source and converted digests.
+
+    The source must match ``expected_sha256`` before it is read with
+    ``torch.load(map_location="cpu", weights_only=True)``. A ``state_dict`` wrapper is unwrapped the way
+    ``tirex2.load_model`` does; tensors are written as contiguous CPU clones with a canonical header."""
+    source, destination = Path(source), Path(destination)
+    source_sha = _sha256(source)
+    if source_sha != expected_sha256:
+        raise ValueError(
+            f"{source.name}: sha256 {source_sha} != pinned {expected_sha256}; refusing to deserialise it"
+        )
+    import torch
+    from safetensors.torch import save
+
+    checkpoint = torch.load(source, map_location="cpu", weights_only=True)
+    state_dict = checkpoint.get("state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
+    tensors = {key: value.detach().to("cpu").contiguous().clone() for key, value in state_dict.items()}
+    metadata = {"format": CONVERSION_FORMAT, "source_file": source.name, "source_sha256": source_sha}
+    data = canonical_safetensors(save(tensors, metadata=metadata))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    tmp = destination.with_name(destination.name + ".tmp")
+    tmp.write_bytes(data)
+    tmp.replace(destination)
+    return {
+        "source_sha256": source_sha,
+        "converted_sha256": hashlib.sha256(data).hexdigest(),
+        "tensors": len(tensors),
+        "bytes": len(data),
+    }
+
+
+def ensure_converted(path: str | Path | None = None, *, allow_download: bool = False) -> Path:
+    """Return the verified ``model.safetensors`` of a snapshot, converting the pinned source if needed.
+
+    The snapshot (config included) is always staged and verified against its manifest. A present
+    converted file whose SHA-256 equals ``CONVERTED_SHA256`` is used as is; otherwise ``model.ckpt``
+    is converted once and the result must equal the pin."""
+    root = Path(path or DEFAULT_WEIGHTS_DIR)
+    stage_missing_files(root, allow_download=allow_download)
+    verify_snapshot(root)
+    target = root / CONVERTED_FILE
+    if target.is_file() and _sha256(target) == CONVERTED_SHA256:
+        return target
+    facts = convert_checkpoint(root / WEIGHTS_FILE, target)
+    if facts["converted_sha256"] != CONVERTED_SHA256:
+        target.unlink(missing_ok=True)
+        raise ValueError(
+            f"{CONVERTED_FILE}: converted sha256 {facts['converted_sha256']} != pinned {CONVERTED_SHA256}"
+        )
+    return target
+
+
+def load_converted_model(root: str | Path, *, device: str, weights: str | Path | None = None) -> Any:
+    """Build the network from ``model-config.yaml`` as ``tirex2.load_model`` (0.2.1) does and load the
+    safetensors weights with ``strict=True``; return it wrapped in ``tirex2``'s ``ForecastModel``."""
+    import torch
+    import yaml
+    from safetensors.torch import load_file
+    from tirex2.api_adapter import ForecastModel
+    from tirex2.model import TiRex2
+
+    root = Path(root)
+    if device.startswith("cuda") and not torch.cuda.is_available():
+        raise RuntimeError("Execution on CUDA was requested but is not available.")
+    with (root / CONFIG_FILE).open(encoding="utf-8") as fh:
+        config: dict[str, Any] = yaml.safe_load(fh)
+    config["device"] = device
+    model = TiRex2(**config)
+    model.load_state_dict(load_file(str(weights or root / CONVERTED_FILE), device="cpu"), strict=True)
+    return ForecastModel(model.eval())
 
 
 def _validate_covariates(value, *, expected_length: int, name: str) -> np.ndarray | None:
@@ -316,29 +410,17 @@ class TiRexForecastPipeline:
                     "before importing torch, or set CUDA_HOME."
                 )
 
-        from tirex2 import load_model
-
         root = Path(weights_dir or DEFAULT_WEIGHTS_DIR)
-        if (root / MANIFEST_NAME).is_file():
-            stage_missing_files(root, allow_download=allow_download)
-            verify_snapshot(root)
-            # A directory argument makes tirex2 read model-config.yaml + model.ckpt from it directly
-            # (no Hub resolution, no cache lookup).
-            model = load_model(str(root), device=device)
-            source = "local-snapshot"
-        elif allow_download:
-            model = load_model(
-                MODEL_ID,
-                device=device,
-                hf_kwargs={"revision": MODEL_REVISION},
-            )
-            source = "hf-hub"
-        else:
+        if not (root / MANIFEST_NAME).is_file():
+            # No Hub-direct load: the model is served only from the conversion of a verified snapshot.
             raise FileNotFoundError(
-                f"no verified snapshot at {root} and allow_download=False; "
-                f"stage it with: hf download {MODEL_ID} --revision {MODEL_REVISION} --local-dir {root}"
+                f"no snapshot manifest at {root}; the model is served only from a verified snapshot. "
+                f"Stage it with: hf download {MODEL_ID} --revision {MODEL_REVISION} --local-dir {root} "
+                f"and copy weights/{MODEL_KEY}/{MANIFEST_NAME} beside it"
             )
-        return cls(model, device, source)
+        weights = ensure_converted(root, allow_download=allow_download)
+        model = load_converted_model(root, device=device, weights=weights)
+        return cls(model, device, "local-snapshot")
 
     def forecast(
         self,

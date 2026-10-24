@@ -181,8 +181,11 @@ TEMPLATE = {
             "weights": (
                 "**Trust boundary (Section 3).** The checkpoint is `model.ckpt`, a PyTorch checkpoint — a pickle container — "
                 "because no safetensors file is published at the pinned revision. It is accepted only at the pinned size and "
-                "SHA-256, and `tirex2` loads it with `weights_only`, which refuses arbitrary pickled objects. **What to notice:** "
-                "`fetched` lists `model.ckpt` on a first run, then the verified-file count."
+                "SHA-256, then read once with `torch.load(weights_only=True)`, which refuses arbitrary pickled objects, and "
+                "converted to `model.safetensors`, whose SHA-256 must equal the pinned `CONVERTED_SHA256`. The model is built "
+                "from `model-config.yaml` and loaded from the safetensors file; no later stage deserialises the pickle. "
+                "**What to notice:** `fetched` lists `model.ckpt` on a first run, then the verified-file count, then "
+                "`served_sha256` equal to `pinned`."
             ),
         },
     },
