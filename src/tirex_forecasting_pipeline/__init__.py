@@ -1,5 +1,7 @@
 from .evaluation import interval_coverage, last_value_baseline, mae, rmse
 from .pipeline import (
+    CONVERTED_FILE,
+    CONVERTED_SHA256,
     DEFAULT_WEIGHTS_DIR,
     INPUT_SCHEMA,
     MODEL_ID,
@@ -7,8 +9,13 @@ from .pipeline import (
     MODEL_LICENSE,
     MODEL_REVISION,
     QUANTILES,
+    SOURCE_SHA256,
     TiRexForecastPipeline,
+    canonical_safetensors,
+    convert_checkpoint,
+    ensure_converted,
     evaluation_report,
+    load_converted_model,
     stage_missing_files,
     validate_inputs,
     verify_snapshot,
@@ -16,6 +23,8 @@ from .pipeline import (
 from .validation import MAX_CONTEXT, MAX_HORIZON, MIN_CONTEXT, validate_horizon, validate_target
 
 __all__ = [
+    "CONVERTED_FILE",
+    "CONVERTED_SHA256",
     "DEFAULT_WEIGHTS_DIR",
     "INPUT_SCHEMA",
     "MAX_CONTEXT",
@@ -26,10 +35,15 @@ __all__ = [
     "MODEL_LICENSE",
     "MODEL_REVISION",
     "QUANTILES",
+    "SOURCE_SHA256",
     "TiRexForecastPipeline",
+    "canonical_safetensors",
+    "convert_checkpoint",
+    "ensure_converted",
     "evaluation_report",
     "interval_coverage",
     "last_value_baseline",
+    "load_converted_model",
     "mae",
     "rmse",
     "stage_missing_files",

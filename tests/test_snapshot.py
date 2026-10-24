@@ -19,6 +19,7 @@ from tirex_forecasting_pipeline import (
     stage_missing_files,
     verify_snapshot,
 )
+from tirex_forecasting_pipeline import pipeline as pipeline_mod
 from tirex_forecasting_pipeline.pipeline import MANIFEST_NAME
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -118,15 +119,31 @@ def test_from_pretrained_loads_the_verified_directory(monkeypatch, tmp_path: Pat
         def forecast(self, timeseries, prediction_length, output_type):
             return [np.zeros((1, 9, prediction_length))]
 
-    def load_model(*args, **kwargs):
-        calls.append((args, kwargs))
+    def load_converted_model(root, **kwargs):
+        calls.append((root, kwargs))
         return FakeModel()
 
-    monkeypatch.setitem(sys.modules, "tirex2", types.SimpleNamespace(load_model=load_model))
+    conversions = []
+
+    def fake_convert(source, destination, **kwargs):
+        conversions.append((Path(source), Path(destination)))
+        Path(destination).write_bytes(b"converted stand-in")
+        return {"converted_sha256": hashlib.sha256(b"converted stand-in").hexdigest()}
+
+    monkeypatch.setattr(pipeline_mod, "SOURCE_SHA256", hashlib.sha256(FILES["model.ckpt"]).hexdigest())
+    monkeypatch.setattr(pipeline_mod, "CONVERTED_SHA256", hashlib.sha256(b"converted stand-in").hexdigest())
+    monkeypatch.setattr(pipeline_mod, "convert_checkpoint", fake_convert)
+    monkeypatch.setattr(pipeline_mod, "load_converted_model", load_converted_model)
+    refuse = types.SimpleNamespace(load_model=lambda *a, **k: pytest.fail("pickle load"))
+    monkeypatch.setitem(sys.modules, "tirex2", refuse)
     _stub_torch(monkeypatch)
     pipe = TiRexForecastPipeline.from_pretrained(device="cpu", weights_dir=tmp_path)
     assert pipe.source == "local-snapshot"
-    assert calls == [((str(tmp_path),), {"device": "cpu"})]
+    assert conversions == [(tmp_path / "model.ckpt", tmp_path / "model.safetensors")]
+    assert calls == [(tmp_path, {"device": "cpu", "weights": tmp_path / "model.safetensors"})]
+    # A second call reuses the pinned conversion and reads no source.
+    TiRexForecastPipeline.from_pretrained(device="cpu", weights_dir=tmp_path)
+    assert len(conversions) == 1
 
 
 def test_from_pretrained_refuses_a_tampered_snapshot(monkeypatch, tmp_path: Path) -> None:

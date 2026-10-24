@@ -225,8 +225,11 @@ FORBIDDEN_PATTERNS = (
     ("mutable model reference (MOD14)", re.compile(r"revision\s*=\s*['\"](?:main|latest)['\"]")),
     ("trust_remote_code enabled", re.compile(r"trust_remote_code\s*[=:]\s*True")),
     (
+        # The one allowed torch.load is the digest-checked, weights_only=True read in convert_checkpoint.
         "unsafe deserialization",
-        re.compile(r"\bpickle\.load|\btorch\.load\s*\(|getattr\(\s*torch\s*,\s*['\"]load['\"]"),
+        re.compile(
+            r"\bpickle\.load|\btorch\.load\s*\((?![^)]*weights_only\s*=\s*True)|getattr\(\s*torch\s*,\s*['\"]load['\"]"
+        ),
     ),
     ("archive extractall", re.compile(r"\.extractall\s*\(")),
     ("notebook magic or shell escape", re.compile(r"(?m)^\s*[%!]|get_ipython\(\)")),
@@ -377,8 +380,12 @@ def validate_identity_consistency() -> None:
 # (dataset files, upstream files that are not staged, origin checkpoints, totals). Declared entries
 # that no document cites any more are rejected, so the allowlist cannot go stale.
 WEIGHT_DOCS = ("README.md", "MODEL_CARD.md", "docs/WEIGHTS.md")
-EXTERNAL_WEIGHT_BYTES: dict[int, str] = {}
-EXTERNAL_WEIGHT_DIGESTS: dict[str, str] = {}
+EXTERNAL_WEIGHT_BYTES: dict[int, str] = {
+    380555776: "model.safetensors, the served conversion of model.ckpt (produced locally, not staged from the Hub)",
+}
+EXTERNAL_WEIGHT_DIGESTS: dict[str, str] = {
+    "7a97f73883d8466552afa79347d44f7730ca91dd82aa345606e8d339dbbe0c72": "CONVERTED_SHA256: model.safetensors, the served conversion of model.ckpt (produced locally)",
+}
 _DIGEST = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{64}(?![0-9a-fA-F])")
 _GROUPED = r"(\d{1,3}(?:[,\u202f\u00a0 ]\d{3})+|\d+)"
 _BYTE_COUNT = re.compile(r"(?<![\d,\-])" + _GROUPED + r"\s*bytes\b|totalBytes`?\s*" + _GROUPED)

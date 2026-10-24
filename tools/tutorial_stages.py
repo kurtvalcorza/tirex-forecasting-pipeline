@@ -122,8 +122,10 @@ def stage_weights(run: Run) -> None:
     fetched = P.stage_missing_files(snapshot, allow_download=True)
     print({"weights_dir": str(snapshot), "fetched": fetched})
     verified = P.verify_snapshot(snapshot)
-    print({"verified": verified, "checkpoint": M.WEIGHTS_FILE, "note": "model.ckpt is a PyTorch checkpoint (a pickle container); tirex2 loads it with weights_only, and it is accepted only at the pinned size and SHA-256"})
-    run.write_state("weights.json", {"snapshot": str(snapshot), "fetched": fetched})
+    print({"verified": verified, "checkpoint": M.WEIGHTS_FILE, "note": "model.ckpt is a PyTorch checkpoint (a pickle container), accepted only at the pinned size and SHA-256; it is read once with torch.load(weights_only=True) and converted to safetensors"})
+    served = M.ensure_converted(snapshot)
+    print({"served_weights": served.name, "served_sha256": M._sha256(served), "pinned": M.CONVERTED_SHA256})
+    run.write_state("weights.json", {"snapshot": str(snapshot), "fetched": fetched, "served": str(served)})
 
 
 # --------------------------------------------------------------------------------------------------

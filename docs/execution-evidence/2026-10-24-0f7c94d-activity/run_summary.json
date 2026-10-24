@@ -1,0 +1,47 @@
+{
+  "repo": "tirex-forecasting-pipeline",
+  "sha": "0f7c94d55297637a0d8e7f7e7533693ba29bbb7f",
+  "notebook": "tutorials/tirex_forecasting_colab.ipynb",
+  "blob": "69ec2780b6ce3c691d8587ccb64dc7d27b85d497",
+  "gpu": "T4",
+  "session": "suite-tirex-0f7c94d-8ac5",
+  "started_utc": "2026-10-24T10:59:14+00:00",
+  "runner": "Colab CLI `colab exec -f` on a fresh session (not a browser Run all)",
+  "overrides": [
+    {
+      "name": "RUN_ACTIVITY",
+      "from": "False",
+      "to": "True"
+    }
+  ],
+  "run_copy_blob": "4b552a94c8406293b56fbc7242acca69359d4c95",
+  "run_copy_sha256": "c0c5946583d68cf9f87d70c52ee063d545d6da2a6fb8ecbcc5c06d553e62c9be",
+  "run_copy_note": "the executed copy differs from the committed blob only in the listed assignment literals; input_unchanged compares against that copy",
+  "status": "[suite-tirex-0f7c94d-8ac5] gpu-t4-s-kkb-usw4b1-2kdb6xfb2b21b | Hardware: T4 | Shape: Standard | Variant: GPU | Status: IDLE",
+  "exec_exit_code": 0,
+  "stopped": true,
+  "wall_s": 155.1,
+  "input_unchanged": true,
+  "executed_file": "tirex_forecasting_colab_0f7c94d_colab-cli-t4_output.ipynb",
+  "log_cells": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "log_total": 10,
+  "code_cells": 10,
+  "executed_cells": 10,
+  "errors": [],
+  "execution_counts": [],
+  "sequential": null,
+  "executed_sha256": "27f2bdd9dbfebd7af201b9278f3e3d796962d29ff85ab313b0bca5bb44bd4e9a",
+  "log_sequential_complete": true,
+  "verdict": "PASS"
+}
