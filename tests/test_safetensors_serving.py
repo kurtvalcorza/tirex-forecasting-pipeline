@@ -89,3 +89,16 @@ def test_the_pinned_conversion_reproduces_the_ckpt_forecast(tmp_path: Path, monk
         expected = stock.forecast(ts, prediction_length=32, output_type="numpy")[0]
         got = served.forecast(ts, prediction_length=32, output_type="numpy")[0]
     assert np.array_equal(got, expected)
+
+
+def test_the_validator_still_refuses_any_other_torch_load() -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("validate_release_assets", Path(__file__).resolve().parents[1] / "tools" / "validate_release_assets.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    pattern = dict(module.FORBIDDEN_PATTERNS)["unsafe deserialization"]
+    assert pattern.search("torch.load(path)")
+    assert pattern.search("torch.load(path, weights_only=False)")
+    assert pattern.search("pickle.load(fh)")
+    assert not pattern.search('torch.load(source, map_location="cpu", weights_only=True)')
