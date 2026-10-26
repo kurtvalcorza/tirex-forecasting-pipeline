@@ -1,0 +1,69 @@
+{
+  "repo": "tirex-forecasting-pipeline",
+  "sha": "af4e566e297d878d7b018fe24f1034086eebf23d",
+  "notebook": "tutorials/tirex_forecasting_colab.ipynb",
+  "blob": "29a4dac980b76450633db31ff61fcafdc065e3f5",
+  "gpu": "T4",
+  "session": "suite-tirex-af4e566-8ac5",
+  "started_utc": "2026-10-26T17:11:05+00:00",
+  "runner": "Colab CLI `colab exec -f` on a fresh session (not a browser Run all)",
+  "overrides": [
+    {
+      "name": "USE_BYOD",
+      "from": "False",
+      "to": "True"
+    },
+    {
+      "name": "BYOD_CSV_PATH",
+      "from": "''",
+      "to": "'/etc/hostname'"
+    }
+  ],
+  "run_copy_blob": "883e68d9f5f54cc02381cc2582230e55f9ff7a08",
+  "run_copy_sha256": "3216136cf98c21b789ebd194c5eae7c30b59bb993f55744b0a0afdfb9f5e5e77",
+  "run_copy_note": "refusal run: the run copy is the committed notebook with the listed assignment overrides, cut immediately after the refusal cell and re-serialised (nbformat layout); input_unchanged compares against that copy",
+  "truncated_after_cell": "tirex_forecasting-15",
+  "refusal_cell_ref": "tirex_forecasting-15",
+  "refusal_cell_index": 5,
+  "cells_dropped": 16,
+  "code_cells_dropped": 5,
+  "original_sha256": "927597e3fe4d912706c230d5d1bcb1c4e348caa2fbdb5cc4268464fcba8a9c0d",
+  "status": "[suite-tirex-af4e566-8ac5] gpu-t4-s-ass1c3-1az9d4m061mir | Hardware: T4 | Shape: Standard | Variant: GPU | Status: IDLE",
+  "exec_exit_code": 0,
+  "stopped": true,
+  "stop_verified": true,
+  "wall_s": 117.6,
+  "input_unchanged": true,
+  "executed_file": "tirex_forecasting_colab_af4e566_colab-cli-t4_output.ipynb",
+  "log_cells": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "log_total": 5,
+  "code_cells": 5,
+  "executed_cells": 5,
+  "errors": [
+    {
+      "cell": "tirex_forecasting-15",
+      "ename": "Refused",
+      "evalue": "hostname: no `timestamp` column in the header ['3fb2077226b2'] (delimiter read as ','; comma, semicolon and tab are recognised) Fix the CSV and run the Section 4 cell again."
+    }
+  ],
+  "execution_counts": [],
+  "sequential": null,
+  "executed_sha256": "eaeea424a6462810eaba07581a41821f1207bba4aee59342f5c1e6848af35beb",
+  "log_sequential_complete": true,
+  "mode": "expect_refusal",
+  "refusal_line": "Refused: hostname: no `timestamp` column in the header ['3fb2077226b2'] (delimiter read as ','; comma, semicolon and tab are recognised) Fix the CSV and run the Section 4 cell again.",
+  "halting_cell_index": 5,
+  "halting_cell_id": "tirex_forecasting-15",
+  "error_cells": [
+    5
+  ],
+  "refusal_fail_reasons": [],
+  "refusal_ok": true,
+  "verdict": "PASS"
+}
