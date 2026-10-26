@@ -95,6 +95,8 @@ def _colab(queue):
 def _kernel(tmp_path: Path) -> tuple[dict, list]:
     calls: list = []
     ns = {"ROOT": tmp_path / "run", "Path": Path, "shutil": shutil, "run_stage": lambda stage, **o: calls.append((stage, o))}
+    install = _cell_with("def run_stage(stage, **options):")
+    exec(install[install.index("class Refused(") : install.index("def run_stage(")], ns)  # noqa: S102 - the notebook's own class
     return ns, calls
 
 
@@ -280,12 +282,12 @@ def test_m2_byod_path_field_and_upload_fallback(tmp_path, monkeypatch) -> None:
     exec(compile(_set(_set(_set(cell, "USE_BYOD", True), "BYOD_CSV_PATH", "/d/series.csv"), "HORIZON", 12), "<s4>", "exec"), ns)
     assert calls[0] == ("data", {"use_byod": True, "byod_csv_path": "/d/series.csv", "horizon": 12})
     ns, calls = _kernel(tmp_path)
-    with pytest.raises(RuntimeError, match="BYOD_CSV_PATH is empty, and the upload dialog exists only in Google Colab"):
+    with pytest.raises(ns["Refused"], match="BYOD_CSV_PATH: is empty, and the upload dialog exists only in Google Colab"):
         exec(compile(_set(cell, "USE_BYOD", True), "<s4>", "exec"), ns)
     monkeypatch.undo()
     with _colab([{}]) as files:
         ns, calls = _kernel(tmp_path)
-        with pytest.raises(RuntimeError, match="cancelled or empty"):
+        with pytest.raises(ns["Refused"], match="cancelled or empty"):
             exec(compile(_set(cell, "USE_BYOD", True), "<s4>", "exec"), ns)
         assert files.calls == 1 and calls == []
 
